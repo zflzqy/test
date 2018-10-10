@@ -1,0 +1,1404 @@
+Index: app/src/main/java/zfl/festival/biz/Smsbiz.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/festival/biz/Smsbiz.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/festival/biz/Smsbiz.java	(revision )
+@@ -7,7 +7,6 @@
+ 
+ import java.util.ArrayList;
+ import java.util.Date;
+-import java.util.HashSet;
+ import java.util.Set;
+ 
+ import zfl.festival.Bean.sendMessage;
+Index: app/src/main/java/zfl/festival/Database/SmsSQLHelper.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/festival/Database/SmsSQLHelper.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/festival/Database/SmsSQLHelper.java	(revision )
+@@ -7,30 +7,28 @@
+ public class SmsSQLHelper extends SQLiteOpenHelper {
+     private static final String DB_NAME = "sms.db";
+     private static final int VERSION = 1;
+-    private static  SmsSQLHelper mInstance ;
+-    private SmsSQLHelper(Context context) {
++    public SmsSQLHelper(Context context) {
+         super(context.getApplicationContext(), DB_NAME, null, VERSION);
+     }
+-    public static SmsSQLHelper getInstance(Context context){
+-        if (mInstance ==null){
+-            synchronized (SmsSQLHelper.class){
+-                if (mInstance == null){
+-                    return new SmsSQLHelper(context);
+-                }
+-            }
+-        }
+-        return mInstance;
+-    }
+     @Override
+     public void onCreate(SQLiteDatabase db) {
++       //创建记录表
+         db.execSQL("create table if not exists sms(_id integer primary key autoincrement," +
+-                "date integer,msg text,festName text,names text,numbers,text)");
++                "msgId integer,date integer,msg text,festName text,names text,numbers,text)");
++        //创建短信表
++        db.execSQL("create table if not exists msg(_id integer primary key autoincrement," +
++                "msgId integer,date integer,msg text,festName text)");
+     }
+ 
+     @Override
+     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
++        //更新表
+         db.execSQL("drop table if exists sms");
+         db.execSQL("create table if not exists sms(_id integer primary key autoincrement," +
+                 "date integer,msg text,festName text,names text,numbers,text)");
++
++        db.execSQL("drop table if exists msg");
++        db.execSQL("create table if not exists msg(_id integer primary key autoincrement," +
++                "msgId integer,date integer,msg text,festName text)");
+     }
+ }
+Index: app/src/main/java/zfl/festival/festival_fragment/festival_history.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/festival/festival_fragment/festival_history.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/festival/festival_fragment/festival_history.java	(revision )
+@@ -1,6 +1,7 @@
+ package zfl.festival.festival_fragment;
+ 
+ import android.content.Context;
++import android.content.DialogInterface;
+ import android.database.Cursor;
+ import android.os.Bundle;
+ import android.support.annotation.Nullable;
+@@ -9,6 +10,7 @@
+ import android.support.v4.content.CursorLoader;
+ import android.support.v4.content.Loader;
+ import android.support.v4.widget.CursorAdapter;
++import android.support.v7.app.AlertDialog;
+ import android.text.TextUtils;
+ import android.view.LayoutInflater;
+ import android.view.View;
+@@ -19,6 +21,8 @@
+ import java.text.SimpleDateFormat;
+ 
+ import zfl.com.myapplication.R;
++import zfl.festival.Database.SmsDAO;
++import zfl.festival.Database.SmsDAOImpl;
+ import zfl.festival.Database.Smscontentprovider;
+ import zfl.festival.view.FlowLayout;
+ 
+@@ -27,12 +31,16 @@
+ public class festival_history extends ListFragment {
+     private static final int LODER_ID = 1;
+     private LayoutInflater mInfalter;
+-    private CursorAdapter mCursorAdapter;
++    private CursorAdapter mCursorAdapter;//适配器
++
++    private SmsDAO mSmsDAO;
+ 
+     @Override
+     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+         super.onViewCreated(view, savedInstanceState);
+         mInfalter =LayoutInflater.from(getActivity());
++        mSmsDAO = new SmsDAOImpl(getActivity());
++
+         initloader();
+         setupListAdapter();
+     }
+@@ -50,11 +58,13 @@
+             public void bindView(View view, Context context, Cursor cursor) {
+                 TextView msg = view.findViewById(R.id.festival_history_tvmsg);
+                 FlowLayout fl = view.findViewById(R.id.festival_history_float);
+-                TextView festName = view.findViewById(R.id.festival_history_tvname);
++                final TextView festName = view.findViewById(R.id.festival_history_tvname);
+                 TextView date = view.findViewById(R.id.festival_history_tvdate);
+ 
+                 msg.setText(cursor.getString(cursor.getColumnIndex("msg")));
+                 festName.setText(cursor.getString(cursor.getColumnIndex("festName")));
++
++
+                 long ldate = cursor.getLong(cursor.getColumnIndex("date"));
+                 date.setText(parseDate(ldate));
+ 
+@@ -66,20 +76,57 @@
+                 for (String name : names.split(",")){
+                     addTag(name,fl);
+                 }
++                //长按删除短信发送记录
++                msg.setOnLongClickListener(new View.OnLongClickListener() {
++                    @Override
++                    public boolean onLongClick(View v) {
++                        String fest =festName.getText().toString();
++                        deleteMsg();
++                        return false;
++                    }
++                });
+             }
+         };
+         setListAdapter(mCursorAdapter);
+     }
++    //删除短信发送记录
++    private void deleteMsg() {
++        AlertDialog.Builder dialog = new AlertDialog.Builder(getActivity());
++        dialog.setTitle("删除短信");
++        dialog.setMessage("确定删除该条短信记录？");
++        dialog.setIcon(R.drawable.delete);
++        dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
++            @Override
++            public void onClick(DialogInterface dialog, int which) {
++                     new Thread(){
++                         @Override
++                         public void run() {
++//                             mSmsDAO.deletesendMsg();
++                         }
++                     }.start();
++            }
++        });
++        dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
++            @Override
++            public void onClick(DialogInterface dialog, int which) {
++                dialog.dismiss();
++            }
++        });
++        dialog.show();
++    }
++
++    //格式转换
+     private String parseDate(long date) {
+         DateFormat df=new SimpleDateFormat("yyyy-MM-dd HH:mm");
+         return df.format(date);
+     }
++    //添加视图
+     private void addTag(String name, FlowLayout fl) {
+         TextView textView = (TextView) mInfalter.inflate(R.layout.tag,fl,false);
+         textView.setText(name);
+         fl.addView(textView);
+     }
+-
++    //初始化数据
+     private void initloader() {
+         getLoaderManager().initLoader(LODER_ID, null, new LoaderManager.LoaderCallbacks<Cursor>() {
+             @Override
+Index: app/src/main/java/zfl/four/downloadServicemoreThread/util/downloadAdapter.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/four/downloadServicemoreThread/util/downloadAdapter.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/four/downloadServicemoreThread/util/downloadAdapter.java	(revision )
+@@ -78,7 +78,7 @@
+             viewHodler = (ViewHodler) convertView.getTag();
+         }
+         //设置进度条更新，通过updateprogress调用getView
+-        viewHodler.pb.setProgress(fileInfo.getFinished()/4);
++        viewHodler.pb.setProgress(fileInfo.getFinished());
+         return convertView;
+     }
+     public void  updateprogress(int id , int progress){
+Index: app/src/main/java/zfl/festival/ChooseMessageActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/festival/ChooseMessageActivity.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/festival/ChooseMessageActivity.java	(revision )
+@@ -1,47 +1,139 @@
+ package zfl.festival;
+ 
++import android.annotation.SuppressLint;
++import android.app.AlertDialog;
++import android.app.PendingIntent;
++import android.content.DialogInterface;
+ import android.os.Bundle;
++import android.os.PersistableBundle;
+ import android.support.annotation.NonNull;
+ import android.support.annotation.Nullable;
+ import android.support.design.widget.FloatingActionButton;
+ import android.support.v7.app.AppCompatActivity;
++import android.text.TextUtils;
++import android.util.Log;
+ import android.view.LayoutInflater;
+ import android.view.View;
+ import android.view.ViewGroup;
+ import android.widget.ArrayAdapter;
+ import android.widget.Button;
++import android.widget.EditText;
++import android.widget.ImageView;
+ import android.widget.ListView;
+ import android.widget.TextView;
++import android.widget.Toast;
++
++import java.util.ArrayList;
++import java.util.Date;
++import java.util.List;
+ 
+ import zfl.com.myapplication.R;
+-import zfl.festival.Bean.Msg;
+-import zfl.festival.Bean.festivalLab;
++import zfl.festival.Bean.festival;
++import zfl.festival.Database.SmsDAO;
++import zfl.festival.Database.SmsDAOImpl;
+ import zfl.festival.festival_fragment.festival_blessing;
+ 
+ 
+ public class ChooseMessageActivity extends AppCompatActivity {
+     private ListView mListview;
+     private FloatingActionButton mFloatBtn;
+-    private ArrayAdapter<Msg> mAdapter;
+-    private int mFestvialId;
+-    private LayoutInflater mInflater;
++
++    private ArrayAdapter<festival> mAdapter;
++    private LayoutInflater mInflater;//添加布局文件
++    private ImageView imageView;//listview最后的加号
++
++    private List<festival> mFestivals;
++    private SmsDAO mSmsDAO;
++    private String mFestivalName;
++    private int[] msgCount = new int[50];
++    private int[] msgCountIndex = new  int[50];//保存msgCount下标
++
+     @Override
+     protected void onCreate(Bundle savedInstanceState) {
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.layout_choose_message);
+-        mFestvialId = getIntent().getIntExtra(festival_blessing.FESTIVAL_ID,0);//获得传来的节日id
++        mFestivalName= getIntent().getStringExtra(festival_blessing.FESTIVAL_NAME);//获得传来的节日名称
++        setTitle(mFestivalName+"祝福");
+         mInflater = LayoutInflater.from(this);//初始化布局
+         initView();
+         initEvent();
++        mListview.addFooterView(imageView);//添加最后的加号布局
+         mListview.setAdapter(mAdapter);//设置适配器
+     }
+ 
++    @Override
++    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
++        super.onSaveInstanceState(outState, outPersistentState);
++        outState.putString("mFestivalName",mFestivalName);//销毁时保存节日名称
++    }
++
+     private void initEvent() {
+         mFloatBtn.setOnClickListener(new View.OnClickListener() {
+             @Override
+             public void onClick(View v) {
+                 //TODO，跳转到sendmessage活动
+-                SendMessageActivity.toActivity(ChooseMessageActivity.this,mFestvialId,0);
++                SendMessageActivity.toActivity(ChooseMessageActivity.this,mFestivalName,0);
++            }
++        });
++        //添加数据
++        imageView.setOnClickListener(new View.OnClickListener()
++        {
++            @SuppressLint("NewApi")
++            @Override
++            public void onClick(View v) {
++                int n = 0;
++                if (msgCount!=null){
++                    for (int i = 0; i < msgCount.length; i++) {
++                        if (0!=msgCount[i])
++                            n++;
++                    }
++                }
++                //判断短信条数是否最大
++                if (n==50){
++                    Toast.makeText(getApplication(),"短信条数已达最大",Toast.LENGTH_SHORT).show();
++                    return;
++                }
++                Toast.makeText(getApplication(),"最多添加50条短信",Toast.LENGTH_SHORT).show();
++                final EditText ed = (EditText) mInflater.inflate(R.layout.item_addmsg,null);
++                //这里的context要这样写才不报错
++                AlertDialog.Builder dialog = new AlertDialog.Builder(ChooseMessageActivity.this);
++                dialog.setTitle("添加祝福短信");
++                dialog.setIcon(R.drawable.adddialog);
++                dialog.setMessage("添加一条祝福语吧");
++                dialog.setView(ed);
++                dialog.setPositiveButton("添加", new DialogInterface.OnClickListener() {
++                    festival fest = new festival();
++                    @Override
++                    public void onClick(DialogInterface dialog, int which)
++                    {
++                        if (TextUtils.isEmpty(ed.getText().toString())){
++                            Toast.makeText(getApplicationContext(),"短信内容不能为空",Toast.LENGTH_SHORT).show();
++                        }
++                        for (int i = 1; i <=50; i++)
++                        {
++                                //判断当前i值是否在数组内
++                                if (i!=msgCount[i-1]){
++                                    fest.setMsgId(i);
++                                    fest.setMsg(ed.getText().toString());
++                                    fest.setFestName(mFestivalName);
++                                    fest.setDate(new Date());
++                                    //数据库操作放入子线程
++                                    DAO dao =new DAO(fest);
++                                    dao.start();
++                                    Toast.makeText(getApplicationContext(),"添加成功",Toast.LENGTH_SHORT).show();
++                                    break;//中断循环，只添加一次
++                                }
++                        }//for循环
++                        refreshadd(fest);
++                    }
++                });
++                dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
++                    @Override
++                    public void onClick(DialogInterface dialog, int which) {
++                        dialog.dismiss();
++                    }
++                });
++               dialog.show();
+             }
+         });
+     }
+@@ -50,35 +142,112 @@
+         mListview = findViewById(R.id.choosemessage_lv);
+         mFloatBtn = findViewById(R.id.choosemessage_flotbtn);
+ 
+-        mAdapter = new ArrayAdapter<Msg>(this,-1, festivalLab.getInstance().getmSgsByfestId(mFestvialId)){
++        imageView = (ImageView) getLayoutInflater().inflate(R.layout.itme_chosse_tag,null);
++        mSmsDAO = new SmsDAOImpl(this);
++
++        mFestivals = new ArrayList<>();
++        mFestivals = mSmsDAO.query(mFestivalName);//初始操作，放入子线程返回不到值
++        changegdata();
++        for (festival festival:mFestivals){
++            Log.i("zfl", "initView: "+festival.getMsg());
++        }
++
++        mAdapter = new ArrayAdapter<festival>(this,-1,mFestivals){
+             @NonNull
+             @Override
+-            public View getView(final int position, @Nullable View convertView, @NonNull ViewGroup parent) {
++            public View getView(final int position, @Nullable View convertView, @NonNull final ViewGroup parent) {
+               viewHolder vh;
+                 if (convertView == null) {
+                     vh = new viewHolder();
+                     convertView = mInflater.inflate(R.layout.item_choosemsg, null);
+                     vh.content = convertView.findViewById(R.id.choosemessage__tv);
+                     vh.btn = convertView.findViewById(R.id.choosemessage__btn);
++                    vh.delete =convertView.findViewById(R.id.choosemessage__delete);
+                     convertView.setTag(vh);
+                 }else {
+                     vh = (viewHolder) convertView.getTag();
+                 }
+-                vh.content.setText("    "+getItem(position).getContent());
++                vh.content.setText("    "+getItem(position).getMsg());
++                //点击发送事件
+                 vh.btn.setOnClickListener(new View.OnClickListener() {
+                     @Override
+                     public void onClick(View v) {
+-                        //todo,跳转到sendmessage活动
+-                        SendMessageActivity.toActivity(ChooseMessageActivity.this,mFestvialId,getItem(position).getId());
++                        SendMessageActivity.toActivity(ChooseMessageActivity.this,mFestivalName,getItem(position).getMsgId());
+                     }
+                 });
++                //删除短信
++              vh.delete.setOnClickListener(new View.OnClickListener()
++              {
++                  @Override
++                  public void onClick(View v) {
++                      mAdapter.remove(getItem(position));
++                      mAdapter.notifyDataSetChanged();
++                      DAO dao =new DAO(mFestivalName, position);
++                      dao.start();
++//                      mSmsDAO.delete(mFestivalName,msgCount[msgCountIndex[position]]);//删除数据库内容
++                  }
++              });
+                 return convertView;
+             }
+             class viewHolder{
+                 TextView content;
+-                Button btn;
++                Button btn,delete;
+             }
+         };
+ 
++    }
++    //初始和更新数据操作
++    private void changegdata() {
++        List<festival> fets =new ArrayList<>();
++        fets = mSmsDAO.query(mFestivalName);
++        int i =0;//放在外边，防止多次设置为0
++        for (festival festival : fets)
++        {
++            msgCount[festival.getMsgId()-1] =festival.getMsgId();//将数据库中的短信id存放到数组
++            boolean write =true;
++            while (write) {
++                msgCountIndex[i] = festival.getMsgId() - 1;
++                i++;
++                write = false;//只读入一次
++            }//while循环
++        }//for循环
++    }
++    //增加的时候刷新ui界面显示
++    private void refreshadd(festival festival) {
++        mAdapter.add(festival);
++    }
++    //线程
++    class  DAO extends Thread{
++        private festival Festival;
++        private String FestName;
++
++        private int position;
++
++        private int Startcode;//启动数据库操作码
++
++        public DAO(festival Festival) {
++            this.Festival = Festival;
++            Startcode = 1;
++        }
++
++        public DAO(String FestName, int position) {
++            this.FestName = FestName;
++            this.position = position;
++            Startcode =2;
++        }
++        @Override
++        public void run() {
++            switch (Startcode){
++                case 1:
++                    //插入操作
++                    mSmsDAO.insert(Festival);
++                    changegdata();
++                    break;
++                case 2:
++                    //删除操作
++                    mSmsDAO.delete(FestName,msgCount[msgCountIndex[position]]);
++                    break;
++            }
++        }
+     }
+ }
+Index: app/src/main/java/zfl/festival/festival_fragment/festival_blessing.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/festival/festival_fragment/festival_blessing.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/festival/festival_fragment/festival_blessing.java	(revision )
+@@ -13,17 +13,22 @@
+ import android.widget.GridView;
+ import android.widget.TextView;
+ 
++import java.util.ArrayList;
++import java.util.List;
++
+ import zfl.com.myapplication.R;
+ import zfl.festival.Bean.festival;
+-import zfl.festival.Bean.festivalLab;
+ import zfl.festival.ChooseMessageActivity;
+ 
+ 
+ public class festival_blessing extends Fragment {
+     private GridView mGridview;
+-    private ArrayAdapter<festival> mAdapter;
+     private LayoutInflater inflater;
+-    public static final String FESTIVAL_ID ="FESTIVAL_ID";//节日id
++
++    private ArrayAdapter<festival> mAdapter;
++    private List<festival> festivals;
++
++    public static final String FESTIVAL_NAME ="FESTIVAL_NAME";//节日名称
+     @Nullable
+     @Override
+     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+@@ -33,39 +38,54 @@
+     @Override
+     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+         mGridview = view.findViewById(R.id.festival_blessing_gv);
++
+         inflater = LayoutInflater.from(getActivity());
++        iniData();
+         //适配器配置
+-        mAdapter = new ArrayAdapter<festival>(getActivity(),-1, festivalLab.getInstance().getFestivals())
++        mAdapter = new ArrayAdapter<festival>(getActivity(),-1,festivals)
+         {
+             @NonNull
+             @Override
+             public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+-                ViewHodler viewHodler;
++                ViewHolder viewHolder;
+                 if (convertView ==null){
+-                    viewHodler = new ViewHodler();
++                    viewHolder = new ViewHolder();
+                     convertView = inflater.inflate(R.layout.item_festival_blessing,parent,false);
+-                    viewHodler.tv = convertView.findViewById(R.id.festival_blessing_tv);
+-                    convertView.setTag(viewHodler);
++                    viewHolder.tv = convertView.findViewById(R.id.festival_blessing_tv);
++                    convertView.setTag(viewHolder);
+                 }else {
+-                    viewHodler = (ViewHodler) convertView.getTag();
++                    viewHolder = (ViewHolder) convertView.getTag();
+                 }
+-                viewHodler.tv.setText(getItem(position).getName());
++                viewHolder.tv.setText(getItem(position).getFestName());
+                 return convertView;
+             }
+-            class ViewHodler
++            class ViewHolder
+             {
+                 TextView tv;
+             }
+         };
+-        mGridview.setAdapter(mAdapter);//这只适配器
++        mGridview.setAdapter(mAdapter);//设置适配器
++        //节日点击监听
+         mGridview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+             @Override
+             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+-                //todoitem点击事件
+                 Intent intent = new Intent(getActivity(), ChooseMessageActivity.class);
+-                intent.putExtra(FESTIVAL_ID,mAdapter.getItem(position).getId());
++                intent.putExtra(FESTIVAL_NAME,mAdapter.getItem(position).getFestName());
+                 startActivity(intent);
+             }
+         });
+     }
++
++    private void iniData() {
++        festivals = new ArrayList<>();
++        festivals.add(new festival("元旦"));
++        festivals.add(new festival("春节"));
++        festivals.add(new festival("清明节"));
++        festivals.add(new festival("劳动节"));
++        festivals.add(new festival("端午节"));
++        festivals.add(new festival("国庆节"));
++
++    }
++
++
+ }
+Index: app/src/main/java/zfl/festival/Bean/sendMessage.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/festival/Bean/sendMessage.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/festival/Bean/sendMessage.java	(revision )
+@@ -6,7 +6,7 @@
+ import java.util.Date;
+ 
+ public class sendMessage {
+-    private int id;
++    private int msId;
+     private String msg;
+     private String numbers;
+     private String names;
+@@ -15,12 +15,12 @@
+     private String dateStr;
+     private DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+ 
+-    public int getId() {
+-        return id;
++    public int getMsId() {
++        return msId;
+     }
+ 
+-    public void setId(int id) {
+-        this.id = id;
++    public void setMsId(int msId) {
++        this.msId = msId;
+     }
+ 
+     public String getMsg() {
+Index: app/src/main/java/zfl/android_one/menu/ContextMenu.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/android_one/menu/ContextMenu.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/android_one/menu/ContextMenu.java	(revision )
+@@ -13,7 +13,7 @@
+ 
+ import java.util.ArrayList;
+ 
+-public class ContextMenu extends AppCompatActivity {
++public class  ContextMenu extends AppCompatActivity {
+     private ListView listView;
+     @Override
+     protected void onCreate(Bundle savedInstanceState) {
+Index: app/src/main/java/zfl/festival/Bean/Msg.java
+===================================================================
+--- app/src/main/java/zfl/festival/Bean/Msg.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/festival/Bean/Msg.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
+@@ -1,43 +0,0 @@
+-package zfl.festival.Bean;
+-
+-
+-
+-public class Msg {
+-    private int id;
+-    private int festivalid;
+-    private String content;
+-
+-    public Msg(int id, int festivalid, String content) {
+-        this.id = id;
+-        this.festivalid = festivalid;
+-        this.content = content;
+-    }
+-
+-    public Msg() {
+-
+-    }
+-
+-    public int getId() {
+-        return id;
+-    }
+-
+-    public void setId(int id) {
+-        this.id = id;
+-    }
+-
+-    public int getFestivalid() {
+-        return festivalid;
+-    }
+-
+-    public void setFestivalid(int festivalid) {
+-        this.festivalid = festivalid;
+-    }
+-
+-    public String getContent() {
+-        return content;
+-    }
+-
+-    public void setContent(String content) {
+-        this.content = content;
+-    }
+-}
+Index: app/src/main/res/values-v21/dimnes.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/values-v21/dimnes.xml	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/res/values-v21/dimnes.xml	(revision )
+@@ -1,4 +1,4 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <resources>
+-    <dimen name="fab_margin">16dp</dimen>
++    <dimen name="fab_margin">61dp</dimen>
+ </resources>
+\ No newline at end of file
+Index: app/src/main/java/zfl/festival/FestivalActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/festival/FestivalActivity.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/festival/FestivalActivity.java	(revision )
+@@ -26,6 +26,8 @@
+     private void init() {
+         mTablayout = findViewById(R.id.festival_tablayot);
+         mViewpager = findViewById(R.id.festival_viewpager);
++        setTitle("祝福短信");
++
+         mViewpager.setAdapter(new FragmentPagerAdapter(getSupportFragmentManager()) {
+             @Override
+             public Fragment getItem(int position) {
+Index: app/src/main/res/layout/festival/layout/item_choosemsg.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/layout/festival/layout/item_choosemsg.xml	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/res/layout/festival/layout/item_choosemsg.xml	(revision )
+@@ -1,5 +1,5 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<LinearLayout
++<RelativeLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+@@ -15,8 +15,20 @@
+         android:layout_height="wrap_content"
+         android:minWidth="0dp"
+         android:minHeight="0dp"
++        android:layout_below="@id/choosemessage__tv"
++        android:layout_alignParentRight="true"
+         android:text="发送"
+         android:drawableLeft="@drawable/icon_to_send"
+-        android:layout_gravity="right"
+         />
+-</LinearLayout>
++
++    <Button
++        android:id="@+id/choosemessage__delete"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_below="@+id/choosemessage__tv"
++        android:layout_toLeftOf="@+id/choosemessage__btn"
++        android:drawableLeft="@drawable/delete"
++        android:minHeight="0dp"
++        android:minWidth="0dp"
++        android:text="删除" />
++</RelativeLayout>
+Index: .idea/vcs.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/vcs.xml	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ .idea/vcs.xml	(revision )
+@@ -1,7 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="VcsDirectoryMappings">
+-    <mapping directory="" vcs="Git" />
+     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+   </component>
+ </project>
+\ No newline at end of file
+Index: app/src/main/res/values/dimnes.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/values/dimnes.xml	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/res/values/dimnes.xml	(revision )
+@@ -1,4 +1,4 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <resources>
+-    <dimen name="fab_margin">0dp</dimen>
++    <dimen name="fab_margin">45dp</dimen>
+ </resources>
+\ No newline at end of file
+Index: app/src/main/java/zfl/festival/Bean/festivalLab.java
+===================================================================
+--- app/src/main/java/zfl/festival/Bean/festivalLab.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/festival/Bean/festivalLab.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
+@@ -1,72 +0,0 @@
+-package zfl.festival.Bean;
+-
+-
+-import java.util.ArrayList;
+-import java.util.List;
+-
+-public class festivalLab {
+-    public static festivalLab mInstance;
+-    private List<festival> mFestivaals = new ArrayList<>();
+-    private List<Msg> mSgs = new ArrayList<>();
+-    private festivalLab(){
+-        mFestivaals.add(new festival(1,"元旦"));
+-        mFestivaals.add(new festival(2,"春节"));
+-        mFestivaals.add(new festival(3,"清明节"));
+-        mFestivaals.add(new festival(4,"劳动节"));
+-        mFestivaals.add(new festival(5,"端午节"));
+-        mFestivaals.add(new festival(6,"中秋节"));
+-        mFestivaals.add(new festival(7,"国庆节"));
+-        //6条元旦信息
+-        mSgs.add(new Msg(1,1,"迈过了365个昼夜，走过了365个台阶，做过了365个梦，付出了365滴辛劳，收获了365个幸福，2017元旦，拉开了新征程的大幕，祝你元旦快乐，好事连连，好梦圆圆，幸福圆满。"));
+-        mSgs.add(new Msg(2,1,"彩旗飘飘风中舞，男女老少喜盈盈。北风呼啸不可畏，元旦到来春光近。烦恼不顺如云烟，立刻消散好运临。气象更新今日始，幸福快乐新年迎。祝元旦快乐！"));
+-        mSgs.add(new Msg(3,1,"让元旦的欢乐驱走你生活的疲惫，让你的心灵跟随节日气氛一起陶醉；愿假期的休息带给你精力充沛，愿你节后上班信心百倍！祝你生活美丽、工作顺利！"));
+-        mSgs.add(new Msg(4,1,"元旦将至，新年初始，需活动拇指。多发短信至亲朋好友以通经脉暖气血，此乃利国民身心健康之大计也。在这个温馨幸福快乐美好的时刻，特别的祝福送给特别的你，祝元旦快乐，事事如意！"));
+-        mSgs.add(new Msg(5,1,"好人好梦路好走，牵手走过九十九，举杯喝了新年酒，幸福生活到永久，祝你好运时时有，财源滚滚抓到手，元旦别忘老朋友，短信互动常问候！"));
+-        mSgs.add(new Msg(6,1,"欢天喜地迎元旦，吃好喝好别心烦，放松情绪心放宽，走出陋室游山川，风调雨顺心情好，忘掉烦忧身体健，关爱自己天高远，幸福吉祥保平安！"));
+-    }
+-    //获得所有节日
+-    public List<festival> getFestivals(){
+-        return  new ArrayList<>(mFestivaals);//返回一个副本防止拿全局的数据修改
+-    }
+-    //根据id获得单个节日
+-    public festival getFestiivalById(int festId){
+-        for (festival festival: mFestivaals){
+-            if (festival.getId() == festId){
+-                return festival;
+-            }
+-        }
+-        return  null;
+-    }
+-    //根据节日id获得短信内容
+-    public  List<Msg> getmSgsByfestId(int festId){
+-        List<Msg> msgs = new ArrayList<>();
+-        for (Msg msg:mSgs){
+-            if (msg.getFestivalid()==festId){
+-                msgs.add(msg);
+-            }
+-        }
+-        return msgs;
+-    }
+-    //根据短信id获得信息
+-    public Msg getMsgById(int id){
+-        Msg ms = new Msg();
+-        for (Msg msg:mSgs){
+-            if (msg.getId() == id){
+-                ms = msg;
+-                return ms;
+-            }
+-        }
+-        return null;
+-    }
+-    public static festivalLab getInstance(){
+-        if (mInstance ==null){
+-            //第一个if提示效率，第二个if防止多个线程访问
+-            synchronized (festivalLab.class){
+-                if (mInstance ==null)
+-                    return new festivalLab();
+-            }
+-        }
+-        return mInstance;
+-    }
+-
+-}
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/misc.xml	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ .idea/misc.xml	(revision )
+@@ -24,10 +24,24 @@
+       </value>
+     </option>
+   </component>
+-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_7" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+-    <output url="file://$PROJECT_DIR$/build/classes" />
+-  </component>
++  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_7" project-jdk-name="1.8" project-jdk-type="JavaSDK" />
+   <component name="ProjectType">
+     <option name="id" value="Android" />
+   </component>
++  <component name="masterDetails">
++    <states>
++      <state key="ProjectJDKs.UI">
++        <settings>
++          <last-edited>1.8</last-edited>
++          <splitter-proportions>
++            <option name="proportions">
++              <list>
++                <option value="0.2" />
++              </list>
++            </option>
++          </splitter-proportions>
++        </settings>
++      </state>
++    </states>
++  </component>
+ </project>
+\ No newline at end of file
+Index: app/src/main/java/zfl/festival/Database/SmsDAO.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/festival/Database/SmsDAO.java	(revision )
++++ app/src/main/java/zfl/festival/Database/SmsDAO.java	(revision )
+@@ -0,0 +1,16 @@
++package zfl.festival.Database;
++
++
++import java.util.List;
++
++import zfl.festival.Bean.festival;
++
++public interface SmsDAO {
++    public void insert(festival festival);//增加短信记录
++    public void delete(String FestName, int msgId);//删除短信记录
++    public void update(festival festival);//修改短信记录
++    public List<festival> query(String FestName);//查找短信记录
++    public festival queryOne(String festName,int msgId);//查找单条短信
++    public List<festival>  querysendMsg(String FestName);//查找短信记发送录
++    public void deletesendMsg(String FestName, int msgId);//删除短信发送记录
++}
+Index: app/src/main/AndroidManifest.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/AndroidManifest.xml	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/AndroidManifest.xml	(revision )
+@@ -241,7 +241,11 @@
+                 <action android:name="android.intent.action.MAIN" />
+             </intent-filter>
+         </activity>
+-        <activity android:name="zfl.festival.ChooseMessageActivity" />
++        <activity android:name="zfl.festival.ChooseMessageActivity" >
++            <intent-filter>
++                <action android:name="android.intent.action.MAIN"/>
++            </intent-filter>
++        </activity>
+         <activity android:name="zfl.festival.SendMessageActivity"></activity>
+         <service android:name="zfl.four.downloadService.util.downloadService" />
+         <service android:name="zfl.four.downloadServicemoreThread.util.downloadServiceThread" />
+Index: app/src/main/java/zfl/festival/Database/Smscontentprovider.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/festival/Database/Smscontentprovider.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/festival/Database/Smscontentprovider.java	(revision )
+@@ -31,7 +31,7 @@
+ 
+     @Override
+     public boolean onCreate() {
+-        mSmsSQLHelper = SmsSQLHelper.getInstance(getContext());//初始化数据库对象
++        mSmsSQLHelper =new  SmsSQLHelper(getContext());//初始化数据库对象
+         return true;
+     }
+ 
+Index: app/src/main/java/zfl/festival/Bean/festival.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/festival/Bean/festival.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/festival/Bean/festival.java	(revision )
+@@ -1,32 +1,59 @@
+ package zfl.festival.Bean;
+ 
+ 
++import java.io.Serializable;
+ import java.util.Date;
+ 
+-public class festival {
+-    private int id;
+-    private String name;
+-    private String desc;
++public class festival implements Serializable {
++    private int msgId;
++    private String festName;
++    private String msg;//节日短信内容
+     private Date date;
++    //为festivla_blessing准备的
++    public festival(String festName) {
++        this.festName = festName;
++    }
+ 
+-    public festival(int id, String name) {
+-        this.id = id;
+-        this.name = name;
++    public festival(int msgId, String festName, String msg, Date date) {
++        this.msgId = msgId;
++        this.festName = festName;
++        this.msg = msg;
++        this.date = date;
+     }
+ 
+-    public int getId() {
+-        return id;
++    public festival() {
++
+     }
+ 
+-    public void setId(int id) {
+-        this.id = id;
++    public int getMsgId() {
++        return msgId;
+     }
+ 
+-    public String getName() {
+-        return name;
++    public void setMsgId(int msgId) {
++        this.msgId = msgId;
+     }
+ 
+-    public void setName(String name) {
+-        this.name = name;
++    public String getFestName() {
++        return festName;
++    }
++
++    public void setFestName(String festName) {
++        this.festName = festName;
++    }
++
++    public String getMsg() {
++        return msg;
++    }
++
++    public void setMsg(String msg) {
++        this.msg = msg;
++    }
++
++    public Date getDate() {
++        return date;
++    }
++
++    public void setDate(Date date) {
++        this.date = date;
+     }
+ }
+Index: app/src/main/java/zfl/festival/Database/SmsDAOImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/festival/Database/SmsDAOImpl.java	(revision )
++++ app/src/main/java/zfl/festival/Database/SmsDAOImpl.java	(revision )
+@@ -0,0 +1,133 @@
++package zfl.festival.Database;
++import android.content.Context;
++import android.database.Cursor;
++import android.database.sqlite.SQLiteDatabase;
++import android.util.Log;
++
++import java.text.ParseException;
++import java.text.SimpleDateFormat;
++import java.util.ArrayList;
++import java.util.Date;
++import java.util.List;
++
++import zfl.festival.Bean.festival;
++
++public class SmsDAOImpl implements SmsDAO {
++    private SmsSQLHelper mSmsSQLHlper =null;
++    private SQLiteDatabase db;
++    private Context mContext;
++
++    public SmsDAOImpl(Context mContext) {
++        mSmsSQLHlper = new SmsSQLHelper(mContext);
++    }
++    //增加短信记录
++    @Override
++    public synchronized void insert(festival festival) {
++        db = mSmsSQLHlper.getWritableDatabase();
++        db.execSQL("insert into msg(msgId,date,msg,festName) values (?,?,?,?)",
++                new Object[]{festival.getMsgId(),festival.getDate().getTime(),festival.getMsg(),festival.getFestName()});
++        db.close();
++    }
++    //删除短信记录
++    @Override
++    public synchronized void delete(String festName, int msgId) {
++        db =mSmsSQLHlper.getWritableDatabase();
++        db.execSQL("delete from msg where msgId =? and festName=?",new String[]{msgId+"",festName});
++        db.close();
++    }
++    //修改短信记录
++    @Override
++    public synchronized void update(festival festival) {
++        db = mSmsSQLHlper.getWritableDatabase();
++        db.execSQL("update  msg set msg=? and date =? where msgId=? and festName =?",
++                new String[]{festival.getMsgId()+"",festival.getDate().getTime()+""});
++    }
++    //查询短信记录
++    @Override
++    public List<festival> query(String festName) {
++        List<festival> festivals = new ArrayList<>();
++        db =mSmsSQLHlper.getReadableDatabase();
++        Cursor cursor = db.rawQuery("select * from msg where festName=?",
++                new String[]{festName});
++//        cursor.moveToFirst();//取第一条数据
++        while (cursor.moveToNext()){
++            festival festival = new festival();
++            festival.setMsgId(cursor.getInt(cursor.getColumnIndex("msgId")));
++            festival.setMsg(cursor.getString(cursor.getColumnIndex("msg")));
++            festival.setFestName(cursor.getString(cursor.getColumnIndex("festName")));
++
++            long ldate =(cursor.getInt(cursor.getColumnIndex("date")));
++            festival.setDate(parseDate(ldate));
++
++            festivals.add(festival);
++        }
++        cursor.close();
++        db.close();
++        return festivals;
++    }
++    //查找单条短信
++    @Override
++    public synchronized festival queryOne(String festName, int msgId) {
++        db =mSmsSQLHlper.getReadableDatabase();
++        festival  festival = new festival();
++        Cursor cursor = db.rawQuery("select * from msg where festName=? and msgId = ?",
++                new String[]{festName,msgId+""});
++//        cursor.moveToFirst();
++        while (cursor.moveToNext()){
++            festival.setMsgId(cursor.getInt(cursor.getColumnIndex("msgId")));
++            festival.setMsg(cursor.getString(cursor.getColumnIndex("msg")));
++            festival.setFestName(cursor.getString(cursor.getColumnIndex("festName")));
++            long ldate =(cursor.getInt(cursor.getColumnIndex("date")));
++            festival.setDate(parseDate(ldate));
++        }
++        cursor.close();
++        db.close();
++        return festival;
++    }
++
++    //查找短信发送记录
++    @Override
++    public List<festival> querysendMsg(String FestName) {
++        List<festival> festivals = new ArrayList<>();
++        db =mSmsSQLHlper.getReadableDatabase();
++        Cursor cursor = db.rawQuery("select * from sms where  festName",
++                new String[]{FestName});
++        cursor.moveToFirst();
++        while (cursor.moveToNext()){
++            festival festival = new festival();
++            festival.setMsgId(cursor.getInt(cursor.getColumnIndex("msgId")));
++            festival.setMsg(cursor.getString(cursor.getColumnIndex("msg")));
++            festival.setFestName(cursor.getString(cursor.getColumnIndex("festName")));
++            long ldate =(cursor.getInt(cursor.getColumnIndex("date")));
++            festival.setDate(parseDate(ldate));
++            festivals.add(festival);
++        }
++        cursor.close();
++        db.close();
++        return festivals;
++    }
++    //删除短信发送记录
++    @Override
++    public synchronized void deletesendMsg(String FestName, int msgId) {
++        db =mSmsSQLHlper.getWritableDatabase();
++        db.execSQL("delete from msg where msgId =? and festName=?",new String[]{msgId+"",FestName});
++        db.close();
++    }
++
++    //日期格式
++    private Date parseDate(long date) {
++        Date rDate = new Date(date);
++        //先转换成String类型
++        SimpleDateFormat df= new SimpleDateFormat("yyyy-MM-dd HH:mm");
++        String sDate =df.format(rDate);
++        //把String转换成date
++        SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd HH:mm");
++        Date newDate = null;
++        try {
++            newDate =sdf.parse(sDate);
++        } catch (ParseException e) {
++            e.printStackTrace();
++        }
++        return newDate;
++    }
++}
+Index: app/src/main/res/layout/festival/layout/layout_choose_message.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/layout/festival/layout/layout_choose_message.xml	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/res/layout/festival/layout/layout_choose_message.xml	(revision )
+@@ -6,11 +6,13 @@
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+     tools:context="zfl.festival.ChooseMessageActivity">
+-    <ListView
+-        android:layout_width="match_parent"
+-        android:layout_height="match_parent"
+-        android:id="@+id/choosemessage_lv"
+-        ></ListView>
++     <ListView
++           android:layout_width="match_parent"
++           android:layout_height="match_parent"
++           android:id="@+id/choosemessage_lv"
++           >
++       </ListView>
++
+     <android.support.design.widget.FloatingActionButton
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+Index: app/src/main/java/zfl/festival/SendMessageActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/zfl/festival/SendMessageActivity.java	(revision 6bbe04bd5ff8b04d817c3f5786cbb1cfb009c2fc)
++++ app/src/main/java/zfl/festival/SendMessageActivity.java	(revision )
+@@ -20,28 +20,24 @@
+ import android.widget.TextView;
+ import android.widget.Toast;
+ 
++import java.util.ArrayList;
+ import java.util.HashSet;
++import java.util.List;
+ 
+ import zfl.com.myapplication.R;
+-import zfl.festival.Bean.Msg;
+ import zfl.festival.Bean.festival;
+-import zfl.festival.Bean.festivalLab;
+ import zfl.festival.Bean.sendMessage;
++import zfl.festival.Database.SmsDAO;
++import zfl.festival.Database.SmsDAOImpl;
+ import zfl.festival.biz.Smsbiz;
+ import zfl.festival.view.FlowLayout;
+ 
+ 
+ public class SendMessageActivity extends AppCompatActivity {
+-    public static final String FEST_ID = "FEST_ID";
+-    public static final String MESG_ID = "MESG_ID";
++    public static final String FEST_NAME = "FEST_NAME";
++    public static final String MSG_ID = "MSG_ID";
+     private static final int CODE_RESULT =1 ;
+ 
+-    private int festId;
+-    private int msagId;
+-
+-    private festival mFestival;
+-    private Msg mMsg;
+-
+     private EditText et;
+     private Button addbtn;
+     private FlowLayout floalayout;
+@@ -65,13 +61,18 @@
+ 
+     private int mTotalMsg;//总发送的
+     private int mSendMsg;//已经发送的
++
++
++    private festival mFestival;//节日短信
++    private String mFestNmae;//获取传过来的节日名称
++    private int msgId;//获取传过来的短信条目id
++    private SmsDAO mSmsDAO;//数据库操作
+     @Override
+     protected void onCreate(Bundle savedInstanceState) {
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.layout_send_message);
+ 
+         mInflater =LayoutInflater.from(this);
+-
+         mSmsbiz = new Smsbiz(this);//发送业务
+ 
+         initDatas();
+@@ -145,8 +146,9 @@
+ 
+     private sendMessage buildContent(String content) {
+         sendMessage sm = new sendMessage();
++        sm.setMsId(msgId);
+         sm.setMsg(content);
+-        sm.setFestName(mFestival.getName());
++        sm.setFestName(mFestival.getFestName());
+         StringBuilder names = new StringBuilder();//用stringBuilder不会在赋值时有null字符
+         StringBuilder numbers= new StringBuilder();
+         for (String name :mContactNames){
+@@ -167,17 +169,18 @@
+         float_btn = findViewById(R.id.sendmessage_flaotbtn);
+         loading = findViewById(R.id.sendmessage_loading);
+         loading.setVisibility(View.GONE);
+-        if (msagId>0){
+-            mMsg = (Msg) festivalLab.getInstance().getMsgById(msagId);
+-            et.setText(mMsg.getContent());
++        if (msgId>0){
++            et.setText(mFestival.getMsg());//设置显示的短信内容
+         }
+     }
+ 
+     private void initDatas() {
+-        festId = getIntent().getIntExtra(FEST_ID,0);
+-        msagId = getIntent().getIntExtra(MESG_ID,0);
+-        mFestival = festivalLab.getInstance().getFestiivalById(festId);
+-        setTitle(mFestival.getName());
++        mSmsDAO = new SmsDAOImpl(this);
++        mFestNmae = getIntent().getStringExtra(FEST_NAME);
++        msgId = getIntent().getIntExtra(MSG_ID,0);
++        mFestival =new festival();
++        mFestival = mSmsDAO.queryOne(mFestNmae,msgId);
++        setTitle(mFestival.getFestName());//设置上方显示节日名称
+     }
+ 
+     @Override
+@@ -228,10 +231,10 @@
+         floalayout.addView(tv);
+     }
+     //跳转到该活动
+-    public static void  toActivity(Context context,int festId,int msagId){
++    public static void  toActivity(Context context,String festName,int msgId){
+         Intent intent = new Intent(context,SendMessageActivity.class);
+-        intent.putExtra(FEST_ID,festId);
+-        intent.putExtra(MESG_ID,msagId);
++        intent.putExtra(FEST_NAME,festName);
++        intent.putExtra(MSG_ID,msgId);
+         context.startActivity(intent);
+     }
+ }
+Index: app/src/main/res/layout/festival/layout/itme_chosse_tag.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/layout/festival/layout/itme_chosse_tag.xml	(revision )
++++ app/src/main/res/layout/festival/layout/itme_chosse_tag.xml	(revision )
+@@ -0,0 +1,8 @@
++<?xml version="1.0" encoding="utf-8"?>
++<ImageView
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="wrap_content"
++    android:src="@drawable/add"
++    >
++</ImageView>
+diff --git app/src/main/res/drawable-xxhdpi/delete.png app/src/main/res/drawable-xxhdpi/delete.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..eca5828bf818da94df1c775125e10c37360376b7
+GIT binary patch
+literal 1258
+zc%17D@N?(olHy`uVBq!ia0vp^3LwnE1|*BCs=fdzwj^(N7l!{JxM1({$v_d#0*}aI
+zAngIhZYQ(tK!Rljj_EM{4DG+>%w=F;e&^}p7!q;#ZMb9h?FfN?_qu0`csE{C>*g~o
+z@#p<<VegT(Z;tUP<|Mq<JIl}U#?W5#_+MVn?YDIp)!nwO^#7RqeS^p(fsiKWIT4D2
+zm(IxPoSc-S&b38{+gjm?`d;(TXU*^LQD^>tdw-6SnIB^XlSAF&3YG^<4Z?g9+uoOz
+zm)B1X@?(F|BC$xsc~9XJ8OaYHB#S@vb-dZSb!$As96zQHH@4-zv^ux;LsMtK1&$e<
+z&)8*?9zL*}>gCH=A+y}ZXy4AAibb(PPCY60@gE8mn8ao%%DNv(KE}xLP0hb#&Xr>f
+zAO5&~l3;XL$9=t2aS4x!K%}Vr@q?|*zYj7R1U^vQqqpu`1EU&KW%>W_uIs;RNF3Mu
+z{}aU6*VidztZ<i+*@;6?@WHif*A68vU%YnRy1KZyIJ4)^p5-0pK7a09+PClDx9;7$
+z_kDfE$3u7S-1$@N;k0DU#3k;(<|cEcrG3%U4{o2^mlk=gCsAT&)Y@f*8rf=2Yr`({
+z96k{_&9wN&%Z$CJPlv?#Ki*<`h{2G1I)~Aey{k0NojP^udD`Zgugi9y`u6P`(~Q8C
+zAwCQi78Vz_m6wSzD9k<^bu{T?M5su6TPeHYZ(H5>Ob@ahSR(d*)1H1>ZN|pW|Nb&D
+zn9Mpm$A0<EoM(Sty2je;0VNm&GmkHkN>G~cx@l>ThuP$lH{M^n-akWfZJ74;w`Egh
+z^|KjHq!~?H_xd<UoZ&#}UB`s^{}fl3XE{t*AF+Sm!gUEsd*Y&u;$QwM+%s)`$=@Ge
+zFHN${lr=uAeey1kz~%=BSrw0T6wL5oNH%vp=+eaYesQ*q{1KZ)je=|fL3-}x1`G{}
+z5>czK&gy5++#2<{EivQa0-4XPDpDWJr+qld&hY&1yOPBhFVy}2@p0#J&ey363z!(@
+z-+KG=^XKBH+xg|^2@85Hoiy`g+FJ?UfBPn_;C8bxlj2=_H;;YhejO1%pxn#;+6176
+zO12N5Z*O=1Xr%Ir>C+J*yT0}7)&+g7`g`;1*RMWmlQ(j;9`f88#mf}3`l>S9g>N%f
+zTz`Fjn)cMoH*ZF&$1oYbSi>U4(9}I+;fht0&p+S4<nqhghaNrh47`4}pm(OEYpgkU
+zcenb>l3!-?&({ZrTwOS0y^GX`qlcR3YFBLBxbb87{`>!<Lqpl+Hf*r1{B`Bu%d@i=
+z7cDJXwQ7~{%Xu3FgfkpiR6oqEa1e1VRIAngAvROkntjO>WnG(jjQ&0Q*beaj66w4#
+z<M0bVwx(IXl=kR9ZfEc;lHxjExFq-X$vt)#mMved`cAX)^84?S2SR>m{FPE$+LC*_
+z<w8AELW%!*h980rpL{hKbQtOxEatN~R2^KtPmtj{^T*PcfBkRUH>^0kDfmG}FR%zu
+zEpd$~Nl7e8wMs5Z1yT$~28IT@AY>9^U}<G)WMyKgYhZ3=U~rw++W<vFZhlH;S|x4`
+z%K|?405wR0Gz90Tm6RtIr7}3C<R_&nc;+Uirv{}arc@T5Otk?jV(@hJb6Mw<&;$Ut
+C$~P4N
+
+diff --git app/src/main/res/drawable-xxhdpi/add.jpg app/src/main/res/drawable-xxhdpi/add.jpg
+new file mode 100644
+index 0000000000000000000000000000000000000000..d70f13c46ca33559f8f7facf7b7aa5022aa4db8d
+GIT binary patch
+literal 3570
+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
+

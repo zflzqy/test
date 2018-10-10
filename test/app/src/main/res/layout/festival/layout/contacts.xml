@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/tag_bg"
+    android:layout_margin="4dp"
+    >
+<TextView
+    android:id="@+id/contacts"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:textSize="20dp"
+    android:text="191919191"
+    android:textColor="@color/festival_color"/>
+<ImageView
+    android:id="@+id/sendmessage_clear"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:layout_toRightOf="@+id/contacts"
+    android:layout_marginLeft="10dp"
+    android:src="@drawable/clear"
+    />
+</RelativeLayout>

@@ -1,0 +1,21 @@
+ maven{ url 'http://maven.aliyun.com/nexus/content/groups/public/'}
+https加密协议
+http上传文件协议
+
+Accept: text/plain, */* 
+Accept-Language: zh-cn 
+Host: 192.168.24.56
+Content-Type:multipart/form-data;boundary=-----------------------------7db372eb000e2
+User-Agent: WinHttpClient 
+Content-Length: 3693
+Connection: Keep-Alive
+
+-------------------------------7db372eb000e2
+
+Content-Disposition: form-data; name="file"; filename="kn.jpg"
+
+Content-Type: image/jpeg
+
+(此处省略jpeg文件二进制数据...）
+
+-------------------------------7db372eb000e2--

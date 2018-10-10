@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="zfl.myTest.pathActivity">
+<RelativeLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <Button
+        android:id="@+id/test_btn_getcache"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="cache"
+        />
+
+    <TextView
+        android:id="@+id/test_tv_cache"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignTop="@id/test_btn_getcache"
+        android:layout_alignBottom="@id/test_btn_getcache"
+        android:layout_toRightOf="@id/test_btn_getcache"
+        android:gravity="center"
+        android:text="cache..................."
+        android:textSize="18dp" />
+    <Button
+        android:id="@+id/test_btn_getfiles"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/test_btn_getcache"
+        android:text="files"
+        />
+    <TextView
+        android:id="@+id/test_tv_files"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/test_btn_getfiles"
+        android:layout_alignTop="@id/test_btn_getfiles"
+        android:layout_toRightOf="@id/test_btn_getfiles"
+        android:gravity="center"
+        android:textSize="18dp"
+        android:text="files..................."
+        />
+</RelativeLayout>
+</android.support.constraint.ConstraintLayout>

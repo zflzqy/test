@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="timeApri">
+        <item>价格升序</item>
+        <item>价格降序</item>
+    </array>
+    <array name="type">
+        <item>one</item>
+        <item>two</item>
+        <item>three</item>
+    </array>
+</resources>

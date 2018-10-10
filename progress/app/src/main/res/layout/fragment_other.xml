@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#ffffff"
+    tools:context=".otherpeotask.OthertaskFrag">
+    <TextView
+        android:id="@+id/tv_othertask"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/receivetask"
+        android:textSize="20dp"
+        android:textColor="#123123"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        />
+    <LinearLayout
+        android:id="@+id/line_sort"
+        android:layout_below="@id/tv_othertask"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#ffffff"
+        android:orientation="horizontal"
+        >
+        <Button
+            android:id="@+id/othtask_btn_credit"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:background="#ffffff"
+            android:text="信用"
+            >
+        </Button>
+        <Spinner
+            android:id="@+id/othtask_sp_pri"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:entries="@array/timeApri"
+            >
+        </Spinner>
+        <Spinner
+            android:id="@+id/othtask_sp_type"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:clickable="false"
+            android:layout_height="wrap_content"
+            android:entries="@array/type"
+            >
+        </Spinner>
+    </LinearLayout>
+
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/othtask_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/line_sort">
+
+        <ListView
+            android:id="@+id/otttask_lv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"        >
+        </ListView>
+    </android.support.v4.widget.SwipeRefreshLayout>
+</RelativeLayout>

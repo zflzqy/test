@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorbackground">#f5f6f8</color>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#000000</color>
+    <color name="colornochecked">#ebebeb</color>
+    <color name="colorGrenn">#52a457</color>
+    <!--perfect-->
+    <color name="colorperweight">#ffffff</color>
+    <!-- percenter-->
+    <color name="colorpercenweight">#f7fbf9</color>
+</resources>

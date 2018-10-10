@@ -1,0 +1,2 @@
+--》eclipse包下建包
+默认情况下，Eclipse的左上角下拉三角形，View Menu下面的Package Presentation选项，选择的是Flat模式，所以呈现的效果是平铺模式，类似并列的效果。所以只需要进行改变Package Presentation选项为Hierarchical即可达到呈现效果

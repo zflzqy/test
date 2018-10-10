@@ -1,0 +1,22 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+    <!-- checkbox样式，nomal普通activated激活-->
+    <style name="MainCheckBox" parent="Theme.AppCompat.Light">
+        <item name="colorControlNormal">@color/colornochecked</item>
+        <item name="colorControlActivated">@color/colorGrenn</item>
+    </style>
+    <!--rating样式 -->
+    <style name="myRatingBar" parent="@android:style/Widget.RatingBar">
+        <item name="android:progressDrawable">@drawable/rating</item>
+        <item name="android:minHeight">30dp</item>
+        <item name="android:maxHeight">30dp</item>
+
+    </style>
+</resources>
