@@ -68,7 +68,6 @@ public class retaskAdapter extends BaseAdapter {
         hoder.tv_request.setText("               "+task.getRequest());
         hoder.tv_price.setText("价格："+task.getPrice());
         hoder.tv_type.setText("类型："+task.getType());
-        log.i("time",task.getStarttime());
         hoder.tv_starttime.setText("开始时间："+
                 task.getStarttime().substring(0,task.getStarttime().length()-2));
         try {

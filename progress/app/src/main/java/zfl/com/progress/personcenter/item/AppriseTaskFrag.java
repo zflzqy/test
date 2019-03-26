@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,10 +31,10 @@ public class  AppriseTaskFrag extends Fragment {
     private ListView mListview;
     private appAdapter adapter;
     private SwipeRefreshLayout btn_refresh;
+    private Task changetask;
     private Handler handler;//handler更新ui
     private List<Task> mTask;//任务集合
     private User user;//用户对象
-    private Task task;//任务对象
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -51,8 +52,9 @@ public class  AppriseTaskFrag extends Fragment {
         //设置适配器
         adapter =new appAdapter(getContext(),mTask,handler);
         mListview.setAdapter(adapter);
-        //子线程获取任务
-        btn_refresh.performClick();//点击刷新
+        //获取任务
+        thread t = new thread(handler,user.getAccount());
+        t.start();
 
     }
     private void init(View view){
@@ -64,16 +66,13 @@ public class  AppriseTaskFrag extends Fragment {
         handler =new Handler();
         mTask =new ArrayList<>();
         user =new User();
-        task =new Task();
     }
     private void initEvent() {
         btn_refresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
                 //获取任务
-                task =new Task();
-                task.setIssue_account(user.getAccount());
-                thread t = new thread(handler,task);
+                thread t = new thread(handler,user.getAccount());
                 t.start();
                 btn_refresh.setRefreshing(false);//停止刷新
             }
@@ -82,6 +81,36 @@ public class  AppriseTaskFrag extends Fragment {
             @Override
             public void handleMessage(Message msg) {
                 //处理handler消息
+                switch (msg.what){
+                    case 1:
+                        //按钮事件 传递的是引用就会改变原值
+                        changetask = (Task) msg.obj;
+                        changetask.setFinished(3);
+                        log.i("arg1",msg.arg1+"");
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                okhttpTask okhttpTask =new okhttpTask();
+                                // 评价任务
+                                String rs =okhttpTask.dealtask(changetask,constant.URL_appriseTask);
+                                if (rs.equals("APPRISE")){
+                                    //更新ui
+                                    handler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            // 通知更新ui
+                                            mTask.remove(changetask); // 移除对象
+                                            adapter.notifyDataSetChanged();
+                                            Toast.makeText(getContext(),"评价成功",Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                }else {
+                                    Toast.makeText(getContext(),"评价失败",Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        }).start();
+                        break;
+                }
             }
         };
         title.setText("待评价任务");
@@ -90,7 +119,7 @@ public class  AppriseTaskFrag extends Fragment {
     public void exit() {
         Intent intent =new Intent(getContext(), MainviewActivity.class);
         intent.putExtra("user",user);
-        intent.putExtra("ACTION", constant.ACTION_PERCENTER);
+//        intent.putExtra("ACTION", constant.ACTION_PERCENTER);
         startActivity(intent);
         getActivity().finish();
         getActivity().overridePendingTransition(R.anim.left,R.anim.left);
@@ -98,19 +127,19 @@ public class  AppriseTaskFrag extends Fragment {
     //线程获取任务
     class  thread extends Thread{
         private Handler handler;
-        private Task task;
+        private Integer account;
         private List<Task> tasks;
 
-        public thread(Handler handler, Task task) {
+        public thread(Handler handler,Integer account) {
             this.handler = handler;
-            this.task = task;
+            this.account = account;
             tasks =new ArrayList<>();
         }
 
         @Override
         public void run() {
-            okhttpTask  okhttpTask =new okhttpTask(task,constant.ACTION_APPRISETASK);
-            tasks =okhttpTask.doGettask();
+            okhttpTask  okhttpTask =new okhttpTask();
+            tasks =okhttpTask.doGetAlltask(account,constant.URL_appriseTasks);
             handler.post(new Runnable() {
                 @Override
                 public void run() {

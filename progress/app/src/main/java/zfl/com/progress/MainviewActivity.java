@@ -31,26 +31,20 @@ public class MainviewActivity extends FragmentActivity implements View.OnClickLi
     private ViewPager viewPager;
     private List<Fragment> mList;
     private FragmentPagerAdapter mAdapter;
-    private String ACTION;
     private User user;
-    public  static  boolean perfect =false;//检测是否完善信息
-    private long time = 0;//记录上一次点击时间;不能放在监听内，不然一直置为0
+    private long time = 0;// 记录上一次点击时间;不能放在监听内，不然一直置为0
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Intent intent = getIntent();
-        ACTION= intent.getStringExtra("ACTION");
+//        ACTION= intent.getStringExtra("ACTION");
         user = (User) intent.getSerializableExtra("user");
         log.i("user","这是用户信息"+user.toString());
         //传递过来的对象自动赋值为本身名称
         init();//初始化控件
-        initEvent();//监听控件
-        if (ACTION != null) {
-                if (ACTION.equals(constant.ACTION_PERCENTER)) {
-                    setSelect(3);//启动个人中心
-                }
-        }
+        initEvent();// 监听控件
+        setSelect(3);// 启动个人中心
     }
     //监听返回键
     @Override
@@ -79,7 +73,7 @@ public class MainviewActivity extends FragmentActivity implements View.OnClickLi
         viewPager.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-               if (!perfect){
+               if (!constant.perfect){
                     return true;
                }else {
                     return false;
@@ -144,7 +138,7 @@ public class MainviewActivity extends FragmentActivity implements View.OnClickLi
 
     @Override
     public void onClick(View v) {
-        if (!perfect) {
+        if (!constant.perfect) {
             setSelect(3);
         }else {
             switch (v.getId()) {

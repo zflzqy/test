@@ -1,6 +1,7 @@
 package zfl.com.progress.util;
 
-import com.google.gson.Gson;
+
+import com.alibaba.fastjson.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,107 +22,133 @@ import zfl.com.progress.Bean.constant;
 public class okhttpUser {
     private OkHttpClient okHttpClient;
     private User user;//user对象
-    private String rs;//服务器返回结果
-    private String ACTION;
+    private String rs ="";//服务器返回结果
     private String u;//user解析成的字符串
     private static String failOrsuccess = "fail";//是否成功登录
-    private Gson gson;
 
-    public okhttpUser(User user, String ACTION) {
+    public okhttpUser(User user) {
         this.user = user;
-        this.ACTION = ACTION;
         okHttpClient = new OkHttpClient();
         //解析user
-        gson = new Gson();
-        u = gson.toJson(user);
+        u = JSONObject.toJSONString(user);
     }
 
-    //上传user
-    public User dogPostuser() {
-        RequestBody requestBody = new FormBody.Builder()
-                .add("ACTION", ACTION)
-                .add("user", u).build();
-        //创建Request对象，设置URL地址，将RequestBody作为post方法的参数传入
-        Request request = new Request.Builder().url(constant.URL_user).post(requestBody).build();
-        //创建一个call对象,参数就是Request请求对象
-        Call call = okHttpClient.newCall(request);
-        try {
-            Response response = call.execute();
-            rs = response.body().string();//服务器返回的数据，只调用一次
-            log.i("okhttpUser","这是结果码"+response.code());
-            if(response.code()!=200){
-                setFailOrsuccess("服务器连接错误");
-                return null;
-            }
-            //登录
-            if (ACTION.equals(constant.ACTION_LOGIN)) {
-                if (rs.equals("loginfail")) {
-                    setFailOrsuccess("loginfail");//未查询到
-                } else {
-                    setFailOrsuccess("successlogin");//查询成功
-                    user = gson.fromJson(rs, User.class);
-                }
-            }
-            //注册
-            else if (ACTION.equals(constant.ACTION_REGISTER)) {
-                if (rs.equals("exists")) {
-                    setFailOrsuccess("exists");//账号已存在
-                } else if (rs.equals("successregister")) {
-                    setFailOrsuccess("successregister");//注册成功
-
-                }
-            }
-            //完善
-            else if (ACTION.equals(constant.ACTION_PERFECT)) {
-                rs = dopostfile();//上传图片
-                if (rs.equals("successperfect")) {
-                    setFailOrsuccess("successperfect");
-                }
-            }
-
-        } catch (SocketException e){
-            e.printStackTrace();
-        }catch (IOException e) {
-            e.printStackTrace();
-        }catch (Exception e){
-            e.printStackTrace();
+    // 登录
+    public User login() {
+        String rs = dogPostuser(constant.URL_login);
+        if (rs.equals("loginfail")) {
+            setFailOrsuccess("loginfail");//未查询到
+        } else {
+            setFailOrsuccess("successlogin");//查询成功
+            user = JSONObject.parseObject(rs,User.class);
         }
         return user;
     }
 
+    // 注册
+    public void register() {
+        String rs = dogPostuser(constant.URL_register);
+        if (rs.equals("exists")) {
+            setFailOrsuccess("exists");//账号已存在
+        } else if (rs.equals("successregister")) {
+            setFailOrsuccess("successregister");//注册成功
+
+        }
+    }
+    // 修改密码
+    public void  updatePassword(){
+     String rs =dogPostuser(constant.URL_updatepassword);
+     if (rs.equals("upfail")){
+         setFailOrsuccess("upfail"); // 修改失败
+     }else {
+         setFailOrsuccess("upsuccess"); // 修改成功
+     }
+    }
+
+    // 完善
+    public void perfectInfo() {
+        String rs = dogPostuser(constant.URL_perfectInfo);//上传图片
+        if (rs.equals("successperfect")) {
+            setFailOrsuccess("successperfect");
+        }
+        if (rs.equals("picfail")){
+            setFailOrsuccess("picfail");
+        }
+        log.i("perfect",rs);
+    }
+
+    //上传user
+    public String dogPostuser(String url) {
+        RequestBody requestBody = new FormBody.Builder()
+                .add("userStr", u).build();
+
+
+        //创建Request对象，设置URL地址，将RequestBody作为post方法的参数传入
+        Request request = new Request.Builder()
+                .url(url)
+                .post(requestBody).build();
+        //创建一个call对象,参数就是Request请求对象
+        Call call = okHttpClient.newCall(request);
+        try {
+
+            Response response = call.execute();
+            rs = response.body().string();//服务器返回的数据，只调用一次
+            byte[] bytes = response.body().toString().getBytes();
+            String passs = new String(bytes,"utf-8");
+            log.i("okhttpUser", "这是结果码" + response.code());
+            log.i("rs", rs);
+            rs =JSONObject.parseObject(rs).get("user").toString();
+            if (response.code() != 200||rs==null) {
+                setFailOrsuccess("服务器连接错误");
+                return rs;
+            }
+
+        } catch (SocketException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return rs;
+    }
+
     //上传文件+信息
-    private String dopostfile() {
-        log.i("okhttpUser", "" + ACTION + "USER:" + u);
+    private String dopostfile(String url) {
         File file = new File(user.getPath());
         if (!file.exists()) {
             log.i("okhttpUser", "文件不存在");
         }
         RequestBody filetBody = RequestBody.create(MediaType.parse("multipart/form-data"), file);
-        log.i("file",file.getName());
-        RequestBody requestBody =new MultipartBody.Builder()
+        log.i("file", file.getName());
+        RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("ACTION",ACTION)
-                .addFormDataPart("user",u)
-                .addFormDataPart("file",file.getName(),filetBody)
+                .addFormDataPart("userStr", u)
+                .addFormDataPart("file", file.getName(), filetBody)
                 .build();
         //创建Request对象，设置URL地址，将RequestBody作为post方法的参数传入
         Request request = new Request.Builder()
-                .url(constant.URL_user)
+                .url(url)
                 .post(requestBody)
                 .build();
         //创建一个call对象,参数就是Request请求对象
         Call call = okHttpClient.newCall(request);
         try {
             Response response = call.execute();
-            rs = response.body().string();
-        } catch (SocketException e){
+            rs = response.body().string();//服务器返回的数据，只调用一次
+            rs =JSONObject.parseObject(rs).get("user").toString();
+            if (response.code() != 200||rs==null) {
+                setFailOrsuccess("服务器连接错误");
+                return rs;
+            }
+        } catch (SocketException e) {
             e.printStackTrace();
-        }catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        return  rs;
+        return rs;
     }
 
     //返回结果
@@ -138,8 +165,15 @@ public class okhttpUser {
             return 5;//连接成功但账号已存在
         } else if (failOrsuccess.equals("successperfect")) {
             return 6;//成功修改
-        } else {
-            return 1;//未成功连接
+        }else  if (failOrsuccess.equals("picfail")){
+            return 7;//图片解析失败
+        }else if (failOrsuccess.equals("upfail")){
+            return  8; // 修改密码失败
+        }else if (failOrsuccess.equals("upsuccess")){
+            return  9; // 修改密码成功
+        }
+        else {
+            return 1;// 服务器连接错误
         }
     }
 

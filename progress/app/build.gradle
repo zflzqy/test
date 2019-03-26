@@ -4,7 +4,7 @@ android {
     compileSdkVersion 26
     defaultConfig {
         applicationId "zfl.com.progress"
-        minSdkVersion 15
+        minSdkVersion 16
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
@@ -16,10 +16,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    buildToolsVersion '27.0.3'
+    buildToolsVersion '28.0.2'
 }
 /*pl  gif图加载库*/
 dependencies {
+    // 添加下面的内容（支付宝开发接口）
+    implementation (name: 'alipaySdk-15.5.9-20181123210601', ext: 'aar')
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     testImplementation 'junit:junit:4.12'
@@ -30,4 +32,7 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:26.1.0'
     //okhttpUser
     implementation 'com.squareup.okhttp3:okhttp:3.11.0'
+    implementation 'com.alibaba:fastjson:1.2.54'
+    // zxing
+    implementation 'com.google.zxing:zxing-parent:3.3.3'
 }

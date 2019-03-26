@@ -1,11 +1,16 @@
 package zfl.com.progress.util;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.Image;
+
+import com.alibaba.fastjson.JSONObject;
+
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.FormBody;
@@ -15,55 +20,34 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import zfl.com.progress.Bean.Task;
 import zfl.com.progress.Bean.User;
-import zfl.com.progress.Bean.constant;
 
 public class okhttpTask {
 
     private OkHttpClient okHttpClient;
     private List<Task> mTask;//任务信息
     private String rs;//服务器返回结果
-    private String ACTION;//请求动作
-    private Task task;//请求任务信息
-    private User user;//用户信息
-    private String t;//task解析字符串
-    private String u;//user解析字符串
-    private Gson gson;//gson对象
 
-    public okhttpTask(Task task, String ACTION) {
-        this.task =task;
-        this.ACTION =ACTION;
+    public okhttpTask() {
+        // 初始化okhttp
         okHttpClient =new OkHttpClient();
-
-        user =new User();
-        //解析task
-        gson =new Gson();
-        t =gson.toJson(task);
     }
 
-    public okhttpTask(User user,String ACTION) {
-        this.user = user;
-        this.ACTION=ACTION;
-        okHttpClient =new OkHttpClient();
-        //解析task
-        gson =new Gson();
-        u =gson.toJson(user);
-    }
-
-    //task
-    public List<Task> doGettask() {
+    // 获取可领取(已领,我的任务，已完成任务)任务
+    public List<Task> doGetAlltask(int account,String url) {
         RequestBody requestBody = new FormBody.Builder()
-                .add("ACTION", ACTION)
-                .add("task", t).build();
+                .add("account", String.valueOf(account))
+                .build();
         //创建Request对象，设置URL地址，将RequestBody作为post方法的参数传入
-        Request request = new Request.Builder().url(constant.URL_task).post(requestBody).build();
+        Request request = new Request.Builder().url(url).post(requestBody).build();
         //创建一个call对象,参数就是Request请求对象
         Call call = okHttpClient.newCall(request);
         try {
             Response response = call.execute();
             rs = response.body().string();//服务器返回的数据，只调用一次
             log.i("okhttpTask","这是结果"+rs);
-            mTask =new ArrayList<>();
-            mTask =gson.fromJson(rs,new TypeToken<List<Task>>(){}.getType());//解析gson成list集合
+            mTask =new ArrayList<>();// 将数据解析成list
+            rs = JSONObject.parseObject(rs).getString("allTasks");
+            mTask = JSONObject.parseArray(rs,Task.class);
         } catch (SocketException e){
             e.printStackTrace();
         }catch (IOException e) {
@@ -73,16 +57,19 @@ public class okhttpTask {
         }
         return mTask;
     }
-    //操作任务（发布，放弃，付款）
-    public String task(){
+
+    // 发布(放弃，领取，完成,同意放弃,评价)任务
+    public String dealtask(Task task,String url){
+        // 解析成字符串发送，后台逆转
+        String t = JSONObject.toJSONString(task);
         RequestBody requestBody =new FormBody.Builder()
-                .add("ACTION",ACTION)
                 .add("task",t).build();
-        Request request =new Request.Builder().url(constant.URL_task).post(requestBody).build();
+        Request request =new Request.Builder().url(url).post(requestBody).build();
         Call call =okHttpClient.newCall(request);
         try {
             Response  response=call.execute();//执行
-            rs =response.body().string();
+            rs = response.body().string();//服务器返回的数据，只调用一次
+            rs = JSONObject.parseObject(rs).getString("tasks");
         } catch (SocketException e){
             e.printStackTrace();
         }catch (IOException e) {
@@ -92,22 +79,22 @@ public class okhttpTask {
         }
         return rs;
     }
-    //user
-    public User doGetuser() {
+    // 获取user信息
+    public User doGetuser(int account,String url) {
+        User user = new User();
         RequestBody requestBody = new FormBody.Builder()
-                .add("ACTION", ACTION)
-                .add("user", u).build();
+                .add("account", account+"").build();
         //创建Request对象，设置URL地址，将RequestBody作为post方法的参数传入
-        Request request = new Request.Builder().url(constant.URL_user).post(requestBody).build();
+        Request request = new Request.Builder().url(url).post(requestBody).build();
         //创建一个call对象,参数就是Request请求对象
         Call call = okHttpClient.newCall(request);
         try {
             Response response = call.execute();
             rs = response.body().string();//服务器返回的数据，只调用一次
             log.i("okhttpTask","这是结果"+rs);
-            user =gson.fromJson(rs,User.class);
-//            mTask =new ArrayList<>();
-//            mTask =gson.fromJson(rs,new TypeToken<List<Task>>(){}.getType());//解析gson成list集合
+            // 获取user
+            rs =JSONObject.parseObject(rs).get("user").toString();
+            user = JSONObject.parseObject(rs,User.class);
         } catch (SocketException e){
             e.printStackTrace();
         }catch (IOException e) {
@@ -117,4 +104,100 @@ public class okhttpTask {
         }
         return user;
     }
+    // 获取支付信息
+    public String getPayInfo(Task task,String url){
+        RequestBody requestBody = new FormBody.Builder()
+                .add("account", String.valueOf(task.getReceive_account()))
+                .add("tid",String.valueOf(task.getId()))
+                .build();
+        //创建Request对象，设置URL地址，将RequestBody作为post方法的参数传入
+        Request request = new Request.Builder().url(url).post(requestBody).build();
+        //创建一个call对象,参数就是Request请求对象
+        Call call = okHttpClient.newCall(request);
+        try {
+            Response response = call.execute();
+            rs = response.body().string();//服务器返回的数据，只调用一次
+            // 获取支付信息
+            rs =JSONObject.parseObject(rs).get("payInfo").toString();
+        } catch (SocketException e){
+            e.printStackTrace();
+        }catch (IOException e) {
+            e.printStackTrace();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return  rs;
+    }
+    // 上传支付结果
+    public String uploadPayResult(String result,String tid, String url){
+        RequestBody requestBody = new FormBody.Builder()
+                .add("result", result)
+                .add("tid",tid)
+                .build();
+        //创建Request对象，设置URL地址，将RequestBody作为post方法的参数传入
+        Request request = new Request.Builder().url(url).post(requestBody).build();
+        //创建一个call对象,参数就是Request请求对象
+        Call call = okHttpClient.newCall(request);
+        try {
+            Response response = call.execute();
+            rs = response.body().string();//服务器返回的数据，只调用一次
+            // 获取支付信息
+            rs =JSONObject.parseObject(rs).get("payInfo").toString();
+        } catch (SocketException e){
+            e.printStackTrace();
+        }catch (IOException e) {
+            e.printStackTrace();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return  rs;
+    }
+    // 获取用户二维码图片url
+//    public String doGetImageUrl(int account,int tid, String url) {
+//        RequestBody requestBody = new FormBody.Builder()
+//                .add("account", String.valueOf(account))
+//                .add("tid", String.valueOf(tid))
+//                .build();
+//        //创建Request对象，设置URL地址，将RequestBody作为post方法的参数传入
+//        Request request = new Request.Builder().url(url).post(requestBody).build();
+//        //创建一个call对象,参数就是Request请求对象
+//        Call call = okHttpClient.newCall(request);
+//        try {
+//            Response response = call.execute();
+//            log.i("okhttpTask","这是结果"+rs);
+//            rs =response.body().string();
+//            rs = JSONObject.parseObject(rs).getString("pic").toString();
+//            // 获取图片的解析的url，服务端解析
+//        } catch (SocketException e){
+//            e.printStackTrace();
+//        }catch (IOException e) {
+//            e.printStackTrace();
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }
+//        return rs;
+//    }
+//    // 获取用户二维码图片
+//    public Bitmap doGetImage(int account, String url) {
+//        Bitmap bitmap = null;
+//        RequestBody requestBody = new FormBody.Builder()
+//                .add("account", account+"").build();
+//        //创建Request对象，设置URL地址，将RequestBody作为post方法的参数传入
+//        Request request = new Request.Builder().url(url).post(requestBody).build();
+//        //创建一个call对象,参数就是Request请求对象
+//        Call call = okHttpClient.newCall(request);
+//        try {
+//            Response response = call.execute();
+//            log.i("okhttpTask","这是结果"+rs);
+//            bitmap= BitmapFactory.decodeStream(response.bodpuy().byteStream());
+//            // 获取图片的解析的url，服务端解析
+//        } catch (SocketException e){
+//            e.printStackTrace();
+//        }catch (IOException e) {
+//            e.printStackTrace();
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }
+//        return bitmap;
+//    }
 }

@@ -1,31 +1,46 @@
 package zfl.com.progress.Bean;
 
+
 import java.io.Serializable;
+import java.util.Date;
+/*
+*  任务类
+* */
+public class Task  implements Serializable{
+    private Integer id; // 任务编号
 
-public class Task implements Serializable{
-    private int  id;//任务唯一标识
-    private String request;//任务要求
-    private int issue_account;//任务发布者账号
-    private int receive_account;//任务领取者账号
-    private float price;//任务价格
-    private String type;//任务类型
-    private String starttime;//任务开始时间
-    private int endtime;//任务要求天数
-    private String finishtime;//任务要求完成时间
-    private int accept;//任务是否被领取
-    private int giveup;//任务是否放弃
-    private int finised;//任务是否完成
-    private String appraise;//任务评价内容
-    private int appraiselevel;//任务评价等级
+    private String request; // 任务要求
 
-    public Task() {
-    }
+    private Integer issue_account; // 发布者账号
 
-    public int getId() {
+    private Float price; // 任务价格
+
+    private String type; // 任务类型
+
+    private String starttime; // 任务开始时间
+
+    private Integer endtime; // 任务需要多少时间
+
+    private Integer accept; // 是否被领取
+
+    private Integer giveup; // 是否放弃
+
+    private Integer finished; // 是否完成
+
+    private String appraise; // 任务评价内容
+
+    private Integer appraiselevel; // 任务评价等级
+
+    // 领取信息
+    private Integer receive_account; // 领取人账号
+
+    private String finishtime; // 完成时间
+
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -37,27 +52,19 @@ public class Task implements Serializable{
         this.request = request;
     }
 
-    public int getIssue_account() {
+    public Integer getIssue_account() {
         return issue_account;
     }
 
-    public void setIssue_account(int issue_account) {
+    public void setIssue_account(Integer issue_account) {
         this.issue_account = issue_account;
     }
 
-    public int getReceive_account() {
-        return receive_account;
-    }
-
-    public void setReceive_account(int receive_account) {
-        this.receive_account = receive_account;
-    }
-
-    public float getPrice() {
+    public Float getPrice() {
         return price;
     }
 
-    public void setPrice(float price) {
+    public void setPrice(Float price) {
         this.price = price;
     }
 
@@ -77,15 +84,7 @@ public class Task implements Serializable{
         this.starttime = starttime;
     }
 
-    public int getEndtime() {
-		return endtime;
-	}
-
-	public void setEndtime(int endtime) {
-		this.endtime = endtime;
-	}
-
-	public String getFinishtime() {
+    public String getFinishtime() {
         return finishtime;
     }
 
@@ -93,45 +92,61 @@ public class Task implements Serializable{
         this.finishtime = finishtime;
     }
 
-    public int getAccept() {
+    public Integer getEndtime() {
+        return endtime;
+    }
+
+    public void setEndtime(Integer endtime) {
+        this.endtime = endtime;
+    }
+
+    public Integer getAccept() {
         return accept;
     }
 
-    public void setAccept(int accept) {
+    public void setAccept(Integer accept) {
         this.accept = accept;
     }
 
-    public int getGiveup() {
+    public Integer getGiveup() {
         return giveup;
     }
 
-    public void setGiveup(int giveup) {
+    public void setGiveup(Integer giveup) {
         this.giveup = giveup;
     }
 
-    public int getFinised() {
-        return finised;
+    public Integer getFinished() {
+        return finished;
     }
 
-    public void setFinised(int finised) {
-        this.finised = finised;
+    public void setFinished(Integer finished) {
+        this.finished = finished;
     }
 
-	public String getAppraise() {
-		return appraise;
-	}
+    public String getAppraise() {
+        return appraise;
+    }
 
-	public void setAppraise(String appraise) {
-		this.appraise = appraise;
-	}
+    public void setAppraise(String appraise) {
+        this.appraise = appraise;
+    }
 
-	public int getAppraiselevel() {
-		return appraiselevel;
-	}
+    public Integer getAppraiselevel() {
+        return appraiselevel;
+    }
 
-	public void setAppraiselevel(int appraiselevel) {
-		this.appraiselevel = appraiselevel;
-	}
+    public void setAppraiselevel(Integer appraiselevel) {
+        this.appraiselevel = appraiselevel;
+    }
+
+    public Integer getReceive_account() {
+        return receive_account;
+    }
+
+    public void setReceive_account(Integer receive_account) {
+        this.receive_account = receive_account;
+    }
 
     @Override
     public String toString() {
@@ -139,17 +154,17 @@ public class Task implements Serializable{
                 "id=" + id +
                 ", request='" + request + '\'' +
                 ", issue_account=" + issue_account +
-                ", receive_account=" + receive_account +
                 ", price=" + price +
                 ", type='" + type + '\'' +
                 ", starttime='" + starttime + '\'' +
                 ", endtime=" + endtime +
-                ", finishtime='" + finishtime + '\'' +
                 ", accept=" + accept +
                 ", giveup=" + giveup +
-                ", finised=" + finised +
+                ", finished=" + finished +
                 ", appraise='" + appraise + '\'' +
                 ", appraiselevel=" + appraiselevel +
+                ", receiveaccount=" + receive_account +
+                ", finishtime='" + finishtime + '\'' +
                 '}';
     }
 }

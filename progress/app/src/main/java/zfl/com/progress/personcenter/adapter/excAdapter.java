@@ -66,7 +66,7 @@ public class excAdapter extends BaseAdapter {
             hodler.tv_giveacc = convertView.findViewById(R.id.ect_itaccount);
             hodler.tv_givewho = convertView.findViewById(R.id.ect_ittip);
             hodler.acceptegiveup = convertView.findViewById(R.id.ect_itgu);
-            convertView.setTag(handler);
+            convertView.setTag(hodler);
         } else {
             hodler = (viewHodler) convertView.getTag();
         }
@@ -85,6 +85,12 @@ public class excAdapter extends BaseAdapter {
                 user.setAccount(task.getIssue_account());
                 thread t = new thread(user, handler,hodler.tv_giveupname);
                 t.start();
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        hodler.tv_giveupname.setText("这是放弃人"+user.getName());
+                    }
+                });
                 hodler.tv_giveacc.setText("放弃人账号：" + task.getIssue_account() + "");
                 if (task.getGiveup()==3){
                     hodler.tv_givewho.setText("已放弃任务");
@@ -104,7 +110,7 @@ public class excAdapter extends BaseAdapter {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        hodler.tv_giveupname.setText("这是新的name"+user.getName());
+                        hodler.tv_giveupname.setText("这是放弃人"+user.getName());
                     }
                 });
                 hodler.tv_giveacc.setText("放弃人账号：" + task.getReceive_account() + "");
@@ -183,8 +189,9 @@ public class excAdapter extends BaseAdapter {
 
         @Override
         public void run() {
-            okhttpTask okhttpTask = new okhttpTask(user, constant.ACTION_GETUSERBYTASK);
-            user = okhttpTask.doGetuser();
+            okhttpTask okhttpTask = new okhttpTask();
+            user = okhttpTask.doGetuser(user.getAccount(),constant.URL_exceGetUser);
+
             handler.post(new Runnable() {
                 @Override
                 public void run() {

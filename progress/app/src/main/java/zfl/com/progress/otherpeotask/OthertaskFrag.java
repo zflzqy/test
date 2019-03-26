@@ -43,7 +43,6 @@ public class OthertaskFrag extends Fragment {
     private ListView mList;
     private User user;
     private List<Task> mTask;//可领任务集合
-    private Task task;//请求的任务
     private Task changeTask;//改变任务
     private othertaskAdapter adapter;
     private Handler handler = new Handler();
@@ -64,8 +63,10 @@ public class OthertaskFrag extends Fragment {
         //数据展示
         adapter = new othertaskAdapter(getContext(), mTask, handler);
         mList.setAdapter(adapter);
-        //获取数据
-        btn_credit.performClick();//首先按信用排序
+        btn_credit.setTextColor(getContext().getResources().getColor(R.color.red));
+        //获取数据（信用排序）
+        taskThread tk =new taskThread(user.getAccount());
+        tk.start();
 
     }
 
@@ -170,23 +171,24 @@ public class OthertaskFrag extends Fragment {
                 changeTask.setStarttime(Datechange.getNow());//设置开始任务时间
                 changeTask.setAccept(1);
                 log.i("other", "这是领取任务" + changeTask.toString() + msg.what);
-                Toast.makeText(getContext(), "这是将要领取的任务", Toast.LENGTH_SHORT).show();
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        okhttpTask okhttpTask = new okhttpTask(changeTask, constant.ACTION_GETTASK);
-                        String rs = okhttpTask.task();
+                        okhttpTask okhttpTask = new okhttpTask();
+                        String rs = okhttpTask.dealtask(changeTask,constant.URL_receiveTask);
                         if (rs.equals("gettasksuccess")) {
                             handler.post(new Runnable() {
                                 @Override
                                 public void run() {
                                     //更新数据
                                     mTask.remove(changeTask);
-//                                    adapter.notifyDataSetChanged();
                                     adapter =new othertaskAdapter(getContext(),mTask,handler);
                                     mList.setAdapter(adapter);
+                                    Toast.makeText(getContext(),"领取成功",Toast.LENGTH_SHORT).show();
                                 }
                             });
+                        }else {
+                            Toast.makeText(getContext(),"领取失败",Toast.LENGTH_SHORT).show();
                         }
                     }
                 }).start();
@@ -211,10 +213,8 @@ public class OthertaskFrag extends Fragment {
         @Override
         public void run() {
             //获取数据
-            task = new Task();
-            task.setIssue_account(issueaccount);
-            okhttpTask okhttpTask = new okhttpTask(task, constant.ACTION_OTHERTASK);
-            tasks = okhttpTask.doGettask();
+            okhttpTask okhttpTask = new okhttpTask();
+            tasks = okhttpTask.doGetAlltask(issueaccount,constant.URL_getAllTask);
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {

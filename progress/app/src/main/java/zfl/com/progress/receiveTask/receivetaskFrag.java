@@ -11,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 
@@ -50,7 +51,8 @@ public class receivetaskFrag extends Fragment {
         adapter =new retaskAdapter(getContext(),mTask,handler);
         mListview.setAdapter(adapter);
         //获取任务
-        btn_refresh.performClick();//点击刷新
+        taskThread task = new taskThread(user.getAccount());
+        task.start();
     }
 
     private void init(View view) {
@@ -80,7 +82,7 @@ public class receivetaskFrag extends Fragment {
                 log.i("msgwhat",msg.what+"");
                 switch (msg.what){
                     case 1:
-                        //删除操作,子线程
+                        //删除操作,子线程(放弃任务)
                         changeTask = (Task) msg.obj;
                         changeTask.setFinishtime(Datechange.getNow());
                         changeTask.setGiveup(msg.arg1);
@@ -88,8 +90,8 @@ public class receivetaskFrag extends Fragment {
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
-                                okhttpTask okhttpTask =new okhttpTask(changeTask,constant.ACTION_GIVEUPTASK);
-                                String rs = okhttpTask.task();
+                                okhttpTask okhttpTask =new okhttpTask();
+                                String rs = okhttpTask.dealtask(changeTask,constant.URL_finishedTask);
                                 if (rs.equals("giveupsuccess")){
                                     //更新ui
                                     handler.post(new Runnable() {
@@ -97,20 +99,24 @@ public class receivetaskFrag extends Fragment {
                                         public void run() {
                                             mTask.remove(changeTask);//删除该项
                                             adapter.notifyDataSetChanged();
+                                            Toast.makeText(getContext(),"放弃成功",Toast.LENGTH_SHORT).show();
                                         }
                                     });
+                                }else {
+                                    Toast.makeText(getContext(),"放弃失败",Toast.LENGTH_SHORT).show();
                                 }
                             }
                         }).start();
                         break;
                     case 2:
+                        // 完成任务
                         changeTask= (Task) msg.obj;
-                        changeTask.setFinised(1);
+                        changeTask.setFinished(1);
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
-                                okhttpTask okhttpTask =new okhttpTask(changeTask,constant.ACTION_FINISHETASK);
-                                String rs =okhttpTask.task();
+                                okhttpTask okhttpTask =new okhttpTask();
+                                String rs =okhttpTask.dealtask(changeTask,constant.URL_finishedTask);
                                 if (rs.equals("FINISHTASK")){
                                     handler.post(new Runnable() {
                                         @Override
@@ -118,8 +124,11 @@ public class receivetaskFrag extends Fragment {
                                             //清除该项
                                             mTask.remove(changeTask);
                                             adapter.notifyDataSetChanged();
+                                            Toast.makeText(getContext(),"操作成功",Toast.LENGTH_SHORT).show();
                                         }
                                     });
+                                }else {
+                                    Toast.makeText(getContext(),"操作失败",Toast.LENGTH_SHORT).show();
                                 }
                             }
                         }).start();
@@ -132,25 +141,21 @@ public class receivetaskFrag extends Fragment {
     class taskThread extends Thread{
         private int issueaccount;
         private List<Task> tasks;//可领任务集合
-        Gson gson ;
         public taskThread(int issueaccount) {
             this.issueaccount = issueaccount;
-            gson=new Gson();
         }
 
         @Override
         public void run() {
             //获取数据
-            task =new Task();
-            task.setIssue_account(issueaccount);
-            okhttpTask okhttpTask =new okhttpTask(task, constant.ACTION_RECEIVE);
-            tasks =okhttpTask.doGettask();
+            okhttpTask okhttpTask =new okhttpTask();
+            tasks =okhttpTask.doGetAlltask(issueaccount,constant.URL_havereceiveTask);
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     mTask.clear();
                     mTask.addAll(tasks);
-                    log.i("task","这是可领任务集合"+mTask.toString());
+                    log.i("task","这是领取任务集合"+mTask.toString());
                     adapter.notifyDataSetChanged();//更新listview
                     mListview.setAdapter(adapter);
                 }

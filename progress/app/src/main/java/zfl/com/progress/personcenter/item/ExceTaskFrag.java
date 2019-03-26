@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -37,7 +38,6 @@ public class ExceTaskFrag extends Fragment {
     private SwipeRefreshLayout btn_refresh;
     private excAdapter adapter;
     private List<Task> mTask;
-    private Task task;
     private Task changetask;
     private User user;
     private Handler handler =new Handler();
@@ -53,12 +53,13 @@ public class ExceTaskFrag extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         Intent intent =getActivity().getIntent();
         user = (User) intent.getSerializableExtra("user");
-        init(view);//初始化控件
-        initEvent();//事件
+        init(view); // 初始化控件
+        initEvent(); // 事件
         adapter =new excAdapter(getContext(),mTask,handler,user.getAccount());
         mListview.setAdapter(adapter);
         //线程获取任务
-        btn_refresh.performClick();//点击刷新
+        taskThread tk = new taskThread(user.getAccount(),handler);
+        tk.start();
     }
 
     private void init(View view) {
@@ -74,11 +75,9 @@ public class ExceTaskFrag extends Fragment {
             @Override
             public void onRefresh() {
                 //刷新，线程获取任务
-                task =new Task();
-                task.setIssue_account(user.getAccount());
-                taskThread tk = new taskThread(task, handler);
+                taskThread tk = new taskThread(user.getAccount(), handler);
                 tk.start();
-                btn_refresh.setRefreshing(false);//停止刷新
+                btn_refresh.setRefreshing(false);// 停止刷新
             }
         });
         handler = new Handler(){
@@ -86,23 +85,27 @@ public class ExceTaskFrag extends Fragment {
             public void handleMessage(Message msg) {
                 switch (msg.what){
                     case 1:
-                        //按钮事件
+                        //按钮事件 传递的是引用就会改变原值
                         changetask = (Task) msg.obj;
                         changetask.setGiveup(msg.arg1);
+                        log.i("arg1",msg.arg1+"");
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
-                                okhttpTask okhttpTask =new okhttpTask(changetask,constant.ACTION_GIVEUPTASK);
-                                String rs =okhttpTask.task();
+                                okhttpTask okhttpTask =new okhttpTask();
+                                String rs =okhttpTask.dealtask(changetask,constant.URL_giveupMyTask);
                                 if (rs.equals("giveupsuccess")){
                                     //更新ui
                                     handler.post(new Runnable() {
                                         @Override
                                         public void run() {
-                                            mTask.remove(changetask);//删除该项
+                                            // 通知更新ui
                                             adapter.notifyDataSetChanged();
+                                            Toast.makeText(getContext(),"放弃成功",Toast.LENGTH_SHORT).show();
                                         }
                                     });
+                                }else {
+                                    Toast.makeText(getContext(),"放弃失败",Toast.LENGTH_SHORT).show();
                                 }
                             }
                         }).start();
@@ -115,24 +118,24 @@ public class ExceTaskFrag extends Fragment {
     public void exit() {
        Intent intent =new Intent(getContext(), MainviewActivity.class);
        intent.putExtra("user",user);
-       intent.putExtra("ACTION",constant.ACTION_PERCENTER);
+//       intent.putExtra("ACTION",constant.ACTION_PERCENTER);
        startActivity(intent);
        getActivity().finish();
        getActivity().overridePendingTransition(R.anim.left,R.anim.left);
     }
     class  taskThread extends Thread{
-        private Task task;
+        private int account;
         private List<Task> tasks;
         private Handler handler;
-        public taskThread(Task task,Handler handler) {
-            this.task =task;
+        public taskThread(int account,Handler handler) {
+            this.account =account;
             this.handler =handler;
             tasks =new ArrayList<>();
         }
         @Override
         public void run() {
-            okhttpTask okhttpTask =new okhttpTask(task, constant.ACTION_EXCEPTIONTASK);
-            tasks =okhttpTask.doGettask();
+            okhttpTask okhttpTask =new okhttpTask();
+            tasks =okhttpTask.doGetAlltask(account,constant.URL_getMyExceptionTask);
             log.i("exce",tasks.toString());
             handler.post(new Runnable() {
                 @Override

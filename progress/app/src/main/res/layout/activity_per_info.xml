@@ -34,7 +34,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/back"
         android:layout_marginTop="10dp"
-        android:background="@color/colorperweight"
+        android:background="@color/colorpercenweight"
         >
         <TextView
             android:id="@+id/info_tv_account"
@@ -52,13 +52,13 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/line_account"
         android:layout_marginTop="10dp"
-        android:background="@color/colorperweight">
+        android:background="@color/colorpercenweight">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_marginLeft="10dp"
-            android:background="@color/colorperweight"
+            android:background="@color/colorpercenweight"
             android:gravity="center"
             android:text="@string/username"
             android:textSize="20dp" />
@@ -77,7 +77,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/line_name"
         android:layout_marginTop="10dp"
-        android:background="@color/colorperweight">
+        android:background="@color/colorpercenweight">
 
         <TextView
             android:id="@+id/tv_age"
@@ -85,6 +85,7 @@
             android:layout_height="match_parent"
             android:layout_marginLeft="10dp"
             android:gravity="center"
+            android:background="@color/colorpercenweight"
             android:text="@string/userage"
             android:textSize="20dp" />
 
@@ -112,13 +113,14 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/line_age"
         android:layout_marginTop="10dp"
-        android:background="@color/colorperweight">
+        android:background="@color/colorpercenweight">
 
         <TextView
             android:id="@+id/tv_sex"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_marginLeft="10dp"
+            android:background="@color/colorpercenweight"
             android:text="@string/usersex"
             android:textSize="20dp" />
 
@@ -153,7 +155,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/line_sex"
         android:layout_marginTop="10dp"
-        android:background="@color/colorperweight">
+        android:background="@color/colorpercenweight">
 
         <TextView
             android:id="@+id/tv_school"
@@ -187,6 +189,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/gather"
+            android:background="@color/colorpercenweight"
             android:textSize="20dp" />
     </LinearLayout>
 
@@ -198,15 +201,17 @@
         android:background="@color/colorperweight"
         android:orientation="vertical">
 
-        <ImageView
+        <EditText
             android:id="@+id/info_iv_gather"
             android:layout_width="match_parent"
+            android:layout_height="60dp"/>
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginLeft="60dp"
-            android:layout_marginRight="60dp"
-            android:scaleType="fitXY"
-            android:src="@drawable/ic_launcher_background" />
-
+            android:textSize="25dp"
+            android:background="@color/colorpercenweight"
+            android:text="@string/tip"
+            />
     </LinearLayout>
 
     <Button
@@ -214,7 +219,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:background="#ffffff"
         android:text="@string/perfect"
+        android:background="@color/colorpercenweight"
         android:textSize="25dp" />
 </RelativeLayout>

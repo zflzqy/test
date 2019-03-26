@@ -81,8 +81,8 @@ public class RegistererActivity extends AppCompatActivity implements View.OnClic
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    okhttpUser okhttpUser = new okhttpUser(user, constant.ACTION_REGISTER);
-                    okhttpUser.dogPostuser();
+                    okhttpUser okhttpUser = new okhttpUser(user);
+                    okhttpUser.register();
                     constant.RS = okhttpUser.getResult();
                     if (4 == constant.RS)//如果成功注册
                     {

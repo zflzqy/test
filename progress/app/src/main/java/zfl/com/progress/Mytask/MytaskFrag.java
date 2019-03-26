@@ -23,9 +23,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +45,8 @@ public class MytaskFrag extends Fragment {
     private User user;
     private Gson gson;
     private Handler handler =new Handler();
+    private View view;
+    private TextView tv_type;
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -66,7 +65,8 @@ public class MytaskFrag extends Fragment {
         mListview.setAdapter(adapter);
 
         //获取任务
-        btn_refresh.performClick();//点击刷新
+        taskThread tk =new taskThread();
+        tk.start();
     }
     //初始化控件
     @SuppressLint("ResourceAsColor")
@@ -87,7 +87,7 @@ public class MytaskFrag extends Fragment {
     }
 
     private void initEvent() {
-        btn_add.setOnClickListener(new View.OnClickListener() {
+        btn_add.setOnClickListener(  new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 issuetask();//发布任务
@@ -117,8 +117,8 @@ public class MytaskFrag extends Fragment {
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
-                                okhttpTask okhttpTask =new okhttpTask(changeTask,constant.ACTION_GIVEUPTASK);
-                                String rs = okhttpTask.task();
+                                okhttpTask okhttpTask =new okhttpTask();
+                                String rs = okhttpTask.dealtask(changeTask,constant.URL_giveupMyTask);
                                 if (rs.equals("giveupsuccess")){
                                     //更新ui
                                     handler.post(new Runnable() {
@@ -126,8 +126,12 @@ public class MytaskFrag extends Fragment {
                                         public void run() {
                                             mTask.remove(changeTask);//删除该项
                                             adapter.notifyDataSetChanged();
+                                            Toast.makeText(getContext(),"成功放弃",Toast.LENGTH_SHORT).show();
                                         }
                                     });
+                                }else {
+
+                                    Toast.makeText(getContext(),"放弃失败",Toast.LENGTH_SHORT).show();
                                 }
                             }
                         }).start();
@@ -142,21 +146,18 @@ public class MytaskFrag extends Fragment {
         @Override
         public void run() {
             //获取数据
-            task =new Task();
-            task.setIssue_account(user.getAccount());
-            okhttpTask okhttpTask =new okhttpTask(task, constant.ACTION_MYTASK);
+            okhttpTask okhttpTask =new okhttpTask();
             tasks =new ArrayList<>();
-            tasks=okhttpTask.doGettask();
-            log.i("mTask",mTask.size()+"");
+            tasks = okhttpTask.doGetAlltask(user.getAccount(),constant.URL_myTask);
             //更新ui
             UpdateUi(tasks);
         }
     }
     //发布任务
     private void issuetask() {
-        final AlertDialog.Builder builder =new AlertDialog.Builder(getContext());
-        final View view = LayoutInflater.from(getContext()).inflate(R.layout.frg_issuetask,null);
-        final TextView tv_type =view.findViewById(R.id.ist_type);
+        AlertDialog.Builder builder =new AlertDialog.Builder(getContext());
+        view = LayoutInflater.from(getContext()).inflate(R.layout.frg_issuetask,null);
+        tv_type =view.findViewById(R.id.ist_type);
         tv_type.setText("one");//设置默认
         tv_type.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -198,13 +199,13 @@ public class MytaskFrag extends Fragment {
                     task.setEndtime(Integer.parseInt(ed_endtime.getText().toString()));
                     task.setAccept(0);
                     task.setGiveup(0);
-                    task.setFinised(0);
+                    task.setFinished(0);
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
                             log.i("taskThread",task.toString());
-                            okhttpTask issuetask = new okhttpTask(task, constant.ACTION_ISSUETASK);
-                            String rs = issuetask.task();
+                            okhttpTask issuetask = new okhttpTask();
+                            String rs = issuetask.dealtask(task,constant.URL_issueTask);
                             if (rs.equals("success")) {
                                 getActivity().runOnUiThread(new Runnable() {
                                     @Override
@@ -243,13 +244,13 @@ public class MytaskFrag extends Fragment {
         dialog.getWindow().setAttributes(params);     //设置生效
     }
     //更新ui
-    public void UpdateUi(final List<Task> tasks) {
+    public void UpdateUi(List<Task> tasks) {
+        mTask.clear();
+        mTask.addAll(tasks);
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 //list数据更新放在主线程内，防止子线程更新了数据（异步调用）没有通知主线程更新数据
-                mTask.clear();
-                mTask.addAll(tasks);
                 adapter.notifyDataSetChanged();//更新listview
             }
         });

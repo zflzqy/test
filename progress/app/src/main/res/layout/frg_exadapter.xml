@@ -74,6 +74,7 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="同意放弃" />
+            android:text="同意放弃"
+            android:background="@color/colorpercenweight"/>
     </LinearLayout>
 </LinearLayout>

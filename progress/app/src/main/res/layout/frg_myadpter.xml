@@ -9,13 +9,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/request"
-        android:textSize="20dp" />
+        android:textSize="15dp" />
 
     <TextView
         android:id="@+id/myt_itrq"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="18dp" />
+        android:textSize="15dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -28,13 +28,13 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/price"
-            android:textSize="20dp" />
+            android:textSize="15dp" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="元"
             android:paddingRight="10dp"
-            android:textSize="20dp" />
+            android:textSize="15dp" />
 
         <TextView
             android:id="@+id/myt_ittp"
@@ -43,14 +43,14 @@
             android:layout_gravity="center"
             android:layout_weight="1"
             android:text="@string/type"
-            android:textSize="20dp" />
+            android:textSize="15dp" />
     </LinearLayout>
     <TextView
         android:id="@+id/myt_itst"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="开始时间:"
-        android:textSize="20dp" />
+        android:textSize="15dp" />
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -61,7 +61,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/endtime"
-            android:textSize="20dp" />
+            android:textSize="15dp" />
     </LinearLayout>
 
     <LinearLayout

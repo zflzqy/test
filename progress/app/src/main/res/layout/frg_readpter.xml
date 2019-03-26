@@ -8,13 +8,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/request"
-        android:textSize="20dp" />
+        android:textSize="15dp" />
 
     <TextView
         android:id="@+id/ret_itrq"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="18dp" />
+        android:textSize="15dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -27,13 +27,13 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/price"
-            android:textSize="20dp" />
+            android:textSize="15dp" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="元"
             android:paddingRight="10dp"
-            android:textSize="20dp" />
+            android:textSize="15dp" />
 
         <TextView
             android:id="@+id/ret_ittp"
@@ -42,14 +42,14 @@
             android:layout_gravity="center"
             android:layout_weight="1"
             android:text="@string/type"
-            android:textSize="20dp" />
+            android:textSize="15dp" />
     </LinearLayout>
     <TextView
         android:id="@+id/ret_itst"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="开始时间:"
-        android:textSize="20dp" />
+        android:textSize="15dp" />
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -60,7 +60,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/endtime"
-            android:textSize="20dp" />
+            android:textSize="15dp" />
     </LinearLayout>
 
     <LinearLayout
@@ -73,13 +73,15 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="@string/giveup" />
+            android:text="@string/giveup"
+            android:background="@color/colorpercenweight"/>
         <Button
             android:id="@+id/ret_itpay"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="@string/fshtask" />
+            android:text="@string/fshtask"
+            android:background="@color/colorpercenweight"/>
     </LinearLayout>
 
 </LinearLayout>

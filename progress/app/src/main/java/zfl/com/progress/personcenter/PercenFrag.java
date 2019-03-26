@@ -21,7 +21,7 @@ import zfl.com.progress.personinfo.LoginActivity;
 
 public class PercenFrag extends Fragment implements View.OnClickListener {
     private ImageView iv_perfect;
-    private TextView  tv_exctask,tv_appraise,tv_finished,tv_chglogin,tv_perfect;
+    private TextView  tv_exctask,tv_appraise,tv_pay,tv_finished,tv_chglogin,tv_perfect,tv_updatapassword;
     private User user;
 
     @Nullable
@@ -42,11 +42,11 @@ public class PercenFrag extends Fragment implements View.OnClickListener {
             e.printStackTrace();
         }
         if (user.getSchool()==null || user.getPath()==null) {
-            MainviewActivity.perfect=false;
+            constant.perfect=false;
             tv_perfect.setTextSize(20);
             tv_perfect.setText("请点击右上角完善必要信息");
         }else{
-            MainviewActivity.perfect=true;
+            constant.perfect=true;
         }
     }
 
@@ -55,45 +55,57 @@ public class PercenFrag extends Fragment implements View.OnClickListener {
         iv_perfect =view.findViewById(R.id.percen_perfect);//个人信息
         tv_exctask =view.findViewById(R.id.percen_tv_exceptiontask);//异常任务
         tv_appraise =view.findViewById(R.id.percen_tv_appraise);//待评价
+        tv_pay = view.findViewById(R.id.percen_tv_pay);
         tv_finished =view.findViewById(R.id.percen_tv_finish);//已完成任务
         tv_chglogin = view.findViewById(R.id.percen_tv_chalogin);//切换账号登录
         tv_perfect =view.findViewById(R.id.percen_tv_perfectInfo);//显示用户信息是否完善
+        tv_updatapassword = view.findViewById(R.id.percen_tv_password); // 修改密码
     }
     private void initEvent() {
         iv_perfect.setOnClickListener(this);
         tv_exctask.setOnClickListener(this);
         tv_appraise.setOnClickListener(this);
+        tv_pay.setOnClickListener(this);
         tv_finished.setOnClickListener(this);
         tv_chglogin.setOnClickListener(this);
+        tv_updatapassword.setOnClickListener(this);
     }
-
+    // code代表pectshow去启动哪个fragment
+    // 0--->个人信息完善，1--》代表异常任务 2--》待评价 3--》已完成任务
+    // 4--》退出登录（跳转login界面数字并没有什么用处）
     @Override
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.percen_perfect:
-                //个人信息完善
-                skip(constant.ACTION_PERTINFO);
+                // 个人信息完善
+                skip(0);
                 break;
             case R.id.percen_tv_exceptiontask:
-                //跳转异常任务
-                skip(constant.ACTION_EXCETASK);
+                // 跳转异常任务
+                skip(1);
                 break;
             case R.id.percen_tv_appraise:
-                //跳转待评价
-                skip(constant.ACTION_APPRISE);
+                // 跳转待评价
+                skip(2);
+                break;
+            case R.id.percen_tv_pay:
+                skip(3);
                 break;
             case R.id.percen_tv_finish:
-                //跳转已完成任务界面
-                skip(constant.ACTION_FINISHED);
+                // 跳转已完成任务界面
+                skip(4);
                 break;
+            case  R.id.percen_tv_password:
+                // 跳转修改密码
+                skip(5);
             case R.id.percen_tv_chalogin:
-                //切换登录
+                // 切换登录
                 AlertDialog.Builder builder =new AlertDialog.Builder(getActivity());
                 builder.setMessage("确定退出当前账号么？");
                 builder.setPositiveButton("确定退出", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        startOtherpage("",LoginActivity.class);
+                        startOtherpage(4,LoginActivity.class);
                     }
                 });
                 builder.show();
@@ -101,15 +113,15 @@ public class PercenFrag extends Fragment implements View.OnClickListener {
         }
     }
 
-    private void skip(String ACTION) {
-        startOtherpage(ACTION,PectshowActivity.class);
+    private void skip(int code) {
+        startOtherpage(code,PectshowActivity.class);
         getActivity().overridePendingTransition(R.anim.right,R.anim.right);
     }
 
     //启动其他活动页面
-    private void startOtherpage(String ACTION,Class<?> activity){
+    private void startOtherpage(int code,Class<?> activity){
         Intent intent =new Intent(getContext(),activity);
-        intent.putExtra("ACTION", ACTION);
+        intent.putExtra("code", code);
         intent.putExtra("user",user);
         getActivity().finish();
         startActivity(intent);

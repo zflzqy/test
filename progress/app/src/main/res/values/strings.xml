@@ -27,8 +27,9 @@
     <string name="man">男</string>
     <string name="woman">女</string>
     <string name="school">学校：</string>
-    <string name="gather">选择你的收款码:</string>
+    <string name="gather">请填写你的支付宝账号:</string>
     <string name="perfect">提交</string>
+    <string name="tip">请准确填写你的支付宝账号否则可能导致转账不成功</string>
     <!--mainactivity -->
     <string name="mytask">我的任务</string>
     <string name="receive">已领任务</string>
@@ -41,6 +42,7 @@
     <string name="personInfo">个人信息</string>
     <string name="changelogin">退出当前账号</string>
     <string name="fshtask">已完成任务</string>
+    <string name="updapassword">修改密码</string>
     <string name="waitpay">待付款</string>
     <!--taskThread -->
     <string name="issuetask">发布任务</string>

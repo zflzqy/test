@@ -2,6 +2,7 @@ package zfl.com.progress.personcenter.adapter;
 
 import android.content.Context;
 import android.os.Handler;
+import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +25,7 @@ public class appAdapter extends BaseAdapter {
     private Handler handler;
     private Task task;
     private User user;
+    private Message message;
     private viewHodler hodler;
     private LayoutInflater mInflater;//界面载入
     public appAdapter(Context context, List<Task> mTask, Handler handler){
@@ -63,13 +65,14 @@ public class appAdapter extends BaseAdapter {
             hodler = (viewHodler) convertView.getTag();
         }
         task=mTask.get(position);
+        message = new Message();
         //子线程获取完成人信息
+        if (task.getReceive_account()!=null){
         new Thread(new Runnable() {
             @Override
             public void run() {
-                user.setAccount(task.getIssue_account());
-                okhttpTask okhttpTask =new okhttpTask(user, constant.ACTION_GETUSERBYTASK);
-                user =okhttpTask.doGetuser();
+                okhttpTask okhttpTask =new okhttpTask();
+                user =okhttpTask.doGetuser(task.getReceive_account(),constant.URL_exceGetUser);
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -79,22 +82,18 @@ public class appAdapter extends BaseAdapter {
                 });
             }
         }).start();
+        }
         hodler.btn_commit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //子线程提交评价
+                // 监听提交评价
                 String content = hodler.ed_appcontent.getText().toString();//获得评价内容
-                int level = hodler.rb_appriselevel.getRight();//获得评价等级
+                int level = (int) hodler.rb_appriselevel.getRating();//获得评价等级
                 task.setAppraise(content);
                 task.setAppraiselevel(level);
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        okhttpTask okhttpTask =new okhttpTask(task,constant.ACTION_APPRISECOT);
-                        String rs =okhttpTask.task();
-
-                    }
-                }).start();
+                message.obj=task;
+                message.what = 1;//按钮的handler
+                handler.sendMessage(message);
             }
         });
         return convertView;

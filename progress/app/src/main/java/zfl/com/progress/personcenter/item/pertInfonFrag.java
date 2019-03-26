@@ -1,16 +1,23 @@
 package zfl.com.progress.personcenter.item;
 
+import android.Manifest;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Handler;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,31 +31,41 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
+import zfl.com.progress.Bean.Task;
 import zfl.com.progress.Bean.User;
 import zfl.com.progress.Bean.constant;
 import zfl.com.progress.MainviewActivity;
 import zfl.com.progress.R;
 import zfl.com.progress.util.log;
+import zfl.com.progress.util.okhttpTask;
 import zfl.com.progress.util.okhttpUser;
 
+import static android.app.Activity.RESULT_OK;
+
 public class pertInfonFrag extends Fragment implements View.OnClickListener {
-    private EditText et_name;
+    private EditText et_name,et_gather;
     private RadioGroup rg_sex;
     private SeekBar sb_age;
-    private ImageView iv_gather, iv_back;
+    private ImageView iv_back;
     private Button btn_perfect;
     private TextView age_show, tv_account, tv_school;
     private User user;
     private RadioButton rb;//单选按钮
     private boolean isPerfect = false;//是否提交修改
     private int image_code;//打开图库请求码
+    private Bitmap bitmap; // 显示的图片
     private String[] school;
+    private Handler handler;
+    private File cacheFile;
 
     @Nullable
     @Override
@@ -67,13 +84,20 @@ public class pertInfonFrag extends Fragment implements View.OnClickListener {
             user = (User) intent.getSerializableExtra("user");
             tv_account.setText("账号：" + user.getAccount());
             et_name.setText(user.getName());
-            sb_age.setProgress(user.getAge());
+            et_gather.setText(user.getPath());
+            if (user.getAge() != null) {
+                sb_age.setProgress(user.getAge());
+            }
             age_show.setText(user.getAge() + "");
             if (user.getSex() != null && user.getSex().equals("女")) {
                 rg_sex.check(R.id.info_rd_woman);//不为空，且为女
+            } else {
+                age_show.setText("0");
             }
             tv_school.setText(user.getSchool());
+
         }
+
 
     }
 
@@ -84,8 +108,8 @@ public class pertInfonFrag extends Fragment implements View.OnClickListener {
                 perfect();//完善信息
                 break;
             case R.id.info_iv_gather:
-                Intent intent_image = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);//系统图库
-                startActivityForResult(intent_image, image_code);//完善个人付款码
+//                Intent intent_image = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);//系统图库
+//                startActivityForResult(intent_image, image_code);//完善个人付款码
                 break;
             case R.id.info_iv_back:
                 //返回事件
@@ -104,45 +128,12 @@ public class pertInfonFrag extends Fragment implements View.OnClickListener {
                 break;
         }
     }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == image_code) {
-            Bitmap bitmap;
-            ContentResolver cr = getActivity().getContentResolver();
-            Uri uri = null;
-            try {
-                uri = data.getData();//部分手机uri可能为空
-            } catch (Exception e) {
-                e.printStackTrace();//捕获，用户不选择图片返回为空的异常
-            }
-            if (uri != null) {
-                try {
-                    bitmap = BitmapFactory.decodeStream(cr.openInputStream(uri));
-                    iv_gather.setImageBitmap(bitmap);
-                    Cursor cursor = getActivity().getContentResolver().
-                            query(uri, null, null, null, null);
-                    if (cursor != null && cursor.moveToFirst()) {
-                        //获取图片路径
-                        String path = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
-                        log.i("path_image", "这是图片路径" + path);
-                        String newfilepath = saveFile(path);
-                        user.setPath(newfilepath);//重新设定图片
-                    }
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
     //控件初始化
     private void init(View view) {
         et_name = view.findViewById(R.id.info_ed_name);
         tv_school = view.findViewById(R.id.info_tv_school);
         rg_sex = view.findViewById(R.id.info_rg_sex);
-        iv_gather = view.findViewById(R.id.info_iv_gather);
+        et_gather = view.findViewById(R.id.info_iv_gather);
         btn_perfect = view.findViewById(R.id.info_btn_perfect);
         sb_age = view.findViewById(R.id.info_sb_age);
         age_show = view.findViewById(R.id.info_tv_showage);
@@ -150,14 +141,15 @@ public class pertInfonFrag extends Fragment implements View.OnClickListener {
         iv_back = view.findViewById(R.id.info_iv_back);
         tv_account = view.findViewById(R.id.info_tv_account);
         image_code = 1;
-
+        handler = new Handler();
         //监听控件
-        iv_gather.setOnClickListener(this);
+        et_gather.setOnClickListener(this);
         btn_perfect.setOnClickListener(this);
         iv_back.setOnClickListener(this);
         tv_school.setOnClickListener(this);
 
     }
+
     //事件监听
     private void initEvent(final View view) {
         //年龄选择监听
@@ -194,22 +186,19 @@ public class pertInfonFrag extends Fragment implements View.OnClickListener {
                     //上传
                     log.i("okhttp_user", user.toString());
                     //更新user对象
-                    okhttpUser okhttpUser = new okhttpUser(getvalue(user), constant.ACTION_PERFECT);
-                    if (user.getPath() != null) {
-                        log.i("okhttpUser", "文件存在");
-                        okhttpUser.dogPostuser();
-                        constant.RS = okhttpUser.getResult();
-                    }
+                    okhttpUser okhttpUser = new okhttpUser(getvalue(user));
+                    okhttpUser.perfectInfo();
+                    constant.RS = okhttpUser.getResult();
                     if (6 == constant.RS)//如果成功修改
                     {
                         getActivity().runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(getContext(), "successperfect", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(), "信息已完善", Toast.LENGTH_SHORT).show();
                             }
                         });
                         isPerfect = true;//成功修改
-                        MainviewActivity.perfect = true;
+                        constant.perfect = true;
                     } else if (1 == constant.RS) {
                         Toast.makeText(getContext(), "connect fail", Toast.LENGTH_SHORT).show();
                     }
@@ -217,55 +206,47 @@ public class pertInfonFrag extends Fragment implements View.OnClickListener {
             }).start();
         } catch (Exception e) {
             e.printStackTrace();
-        }finally {
-            constant.RS =0;
+        } finally {
+            constant.RS = 0;
         }
     }
 
-    //本地存储图片
-    private String saveFile(String path) throws IOException {
-        File file = new File(getActivity().getFilesDir(),"images");
-        if (!file.exists()){
-            file.mkdirs();
-        }
-        File uploadfile = new File(file, String.valueOf(user.getAccount()) + ".jpg");
-        if (!uploadfile.exists()) {
-            uploadfile.createNewFile();//创建文件
-        }
-        FileInputStream in = new FileInputStream(path);
-        FileOutputStream out = new FileOutputStream(uploadfile);
-        byte[] bytes = new byte[8 * 1024];
-        int len = 0;
-        while ((len = in.read(bytes)) != -1) {
-            out.write(bytes, 0, len);
-            out.flush();
-        }
-        in.close();
-        out.close();
-        return  uploadfile.getAbsolutePath();
-    }
     //完善user对象
     private User getvalue(User user) {
         user.setAge(Integer.parseInt(age_show.getText().toString()));
         if (et_name.getText().toString().length() >= 2 && et_name.getText().toString().length() <= 10) {
             user.setName(et_name.getText().toString());
         } else {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getContext(), "名字长度不合法", Toast.LENGTH_SHORT).show();
-                }
-            });
+            showTip("名字长度不合法");
         }
-        user.setSchool(tv_school.getText().toString());
+        log.i("school", tv_school.getText().toString());
+        if (tv_school.getText() == "") {
+            showTip("未选择学校");
+        } else {
+            user.setSchool(tv_school.getText().toString());
+        }
+        if (et_gather.getText().toString().length()>0){
+            user.setPath(et_gather.getText().toString());
+        }else {
+            showTip("未填写支付宝账号");
+        }
         user.setSex(rb.getText().toString());
         return user;
+    }
+
+    // 显示提示信息
+    private void showTip(final String content) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(getContext(), content, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     //跳转页面
     private void startActivity(Intent intent, User user, int anim) {
         intent.putExtra("user", user);
-        intent.putExtra("ACTION", constant.ACTION_PERCENTER);
         startActivity(intent);
         getActivity().finish();
         getActivity().overridePendingTransition(anim, anim);
@@ -290,4 +271,6 @@ public class pertInfonFrag extends Fragment implements View.OnClickListener {
         dialog1.show();
     }
 
+
 }
+

@@ -71,15 +71,15 @@
                 android:textSize="20dp" />
         </LinearLayout>
 
-        <CheckBox
-            android:id="@+id/login_cb"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="30dp"
-            android:layout_marginTop="5dp"
-            android:checked="true"
-            android:text="@string/rememeberpassword"
-            android:theme="@style/MainCheckBox" />
+        <!--<CheckBox-->
+            <!--android:id="@+id/login_cb"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_marginLeft="30dp"-->
+            <!--android:layout_marginTop="5dp"-->
+            <!--android:checked="true"-->
+            <!--android:text="@string/rememeberpassword"-->
+            <!--android:theme="@style/MainCheckBox" />-->
 
         <Button
             android:id="@+id/login_btn_login"
@@ -94,19 +94,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="15dp"
-            android:background="@color/colorperweight">
+            >
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="20dp"
-                android:text="@string/otherlogion"
+                android:text=""
                 android:textSize="20dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="this is other login method" />
+                android:text="" />
         </LinearLayout>
 
     </LinearLayout>
