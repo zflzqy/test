@@ -129,7 +129,7 @@ public class NettyClientHandler extends ChannelInboundHandlerAdapter {
             }
         }
 
-        Thread.sleep(3000);
+        Thread.sleep(500);
         sendMsg(ctx);
     }
 
