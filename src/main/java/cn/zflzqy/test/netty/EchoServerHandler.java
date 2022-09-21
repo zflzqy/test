@@ -1,13 +1,11 @@
 package cn.zflzqy.test.netty;
 
-import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.zflzqy.test.constant.RedisKeyConstant;
-import cn.zflzqy.test.controller.MachineInfoController;
 import cn.zflzqy.websocket.config.WebSocketEventListener;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
@@ -129,11 +127,12 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
         // 构建数据
         data.put("time", parseObject.getString("time"));
         data.put("data",array);
+        data.putAll(parseObject);
         stringRedisTemplate.opsForList().leftPush(listKey,data.toString());
         stringRedisTemplate.expire(listKey,7,TimeUnit.DAYS);
         users.entrySet().forEach(u -> {
             // 推送主机信息
-            simpMessagingTemplate.convertAndSendToUser(u.getValue().getName(), "/topic/machine/info.chart", array.toString());
+            simpMessagingTemplate.convertAndSendToUser(u.getValue().getName(), "/topic/machine/info.chart", data.toString());
         });
 
     }

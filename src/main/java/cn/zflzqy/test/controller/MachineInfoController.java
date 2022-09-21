@@ -60,24 +60,4 @@ public class MachineInfoController {
         jsonObject.put("id",idStr);
         return  jsonObject;
     }
-
-//    // 插入信息结果
-//    JSONObject regester = new JSONObject();
-//    // todo 获取机器名称和机器信息
-//    String hostName = InetAddress.getLocalHost().getHostName();
-//        regester.put("hostName",hostName);
-//    OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
-//    // 总内存：mb
-//    long totalMemory = osmxb.getTotalPhysicalMemorySize() / (1024 * 1024);
-//    // 已使用内存
-//    long userMemory = (osmxb.getTotalPhysicalMemorySize() - osmxb.getFreePhysicalMemorySize()) / (1024 * 1024);
-//        regester.put("totalMemory",totalMemory);
-//        regester.put("userMemory",userMemory);
-//    // cpu使用
-//    double systemCpuLoad = osmxb.getSystemCpuLoad()*100;
-//        regester.put("cpu",systemCpuLoad);
-//    Long addRs = stringRedisTemplate.opsForSet().add(MachineInfoController.key, regester.toString());
-//    JSONObject rs = new JSONObject();
-//        rs.put("rs",addRs);
-    // 获取机器的mac地址
 }
