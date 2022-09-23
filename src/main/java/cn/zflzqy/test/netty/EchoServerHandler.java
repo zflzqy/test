@@ -20,9 +20,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import cn.zflzqy.test.email.EmailUtil;
 
 public class EchoServerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger(EchoServerHandler.class);
@@ -39,7 +41,11 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
         ByteBuf in = (ByteBuf) msg;
         String content = in.toString(CharsetUtil.UTF_8);
         LOGGER.info("获取到数据：{}", content);
+        // 获取客户端ip
+        InetSocketAddress insocket = (InetSocketAddress) ctx.channel().remoteAddress();
+        String ip = insocket.getAddress().getHostAddress();
         JSONObject parseObject = JSONObject.parseObject(content);
+        parseObject.put("ip",ip);
         String macAddress = parseObject.getString("macAddress");
         // 重新计算使用和总共内容
         parseObject.put("totalMemory",NumberUtil.round(parseObject.getLong("totalMemory")/1024,2));
@@ -90,6 +96,15 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
             // 推送主机信息
             simpMessagingTemplate.convertAndSendToUser(u.getValue().getName(), "/topic/machine/info", parseObject.toString());
         });
+        // 发送登录信息
+        boolean sendEmail = EmailUtil.isSendEmail(macAddress, stringRedisTemplate);
+        if (sendEmail){
+            try {
+                EmailUtil.sendEmail(parseObject.getString("hostName"),ip,macAddress);
+            } catch (Exception e) {
+                LOGGER.error("发送邮件异常：",e);
+            }
+        }
         ByteBuf buf = Unpooled.copiedBuffer(rs.toString(), CharsetUtil.UTF_8);
         ctx.writeAndFlush(buf);
     }
