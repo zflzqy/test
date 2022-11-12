@@ -1,7 +1,8 @@
 package cn.zflzqy.test.netty;
 
+import cn.hutool.cache.CacheUtil;
+import cn.hutool.cache.impl.TimedCache;
 import io.netty.channel.Channel;
-import java.util.concurrent.ConcurrentHashMap;
  
 /**
  * netty活跃连接
@@ -9,13 +10,17 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChannelMap {
     public static int channelNum=0;
     // concurrentHashmap以解决多线程冲突
-    private static ConcurrentHashMap<String,Channel> channelHashMap=null;
+    private static TimedCache<String,Channel> channelHashMap=null;
  
-    public static ConcurrentHashMap<String, Channel> getChannelHashMap() {
-        return channelHashMap;
+    public static TimedCache<String, Channel> getChannelHashMap() {
+        // 获取一个过期淘汰策略
+        TimedCache<String, Channel> timedCache = CacheUtil.newTimedCache(30000);
+        timedCache.schedulePrune(30*10000);
+        return timedCache;
     }
  
     public static Channel getChannelByName(String name){
+
         if(channelHashMap==null||channelHashMap.isEmpty()){
             return null;
         }
@@ -23,7 +28,7 @@ public class ChannelMap {
     }
     public static void addChannel(String name,Channel channel){
         if(channelHashMap==null){
-            channelHashMap=new ConcurrentHashMap<String,Channel>(8);
+            channelHashMap=new TimedCache<String,Channel>(8);
         }
         channelHashMap.put(name,channel);
         channelNum++;

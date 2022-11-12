@@ -106,8 +106,23 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
             }
         }
         ByteBuf buf = Unpooled.copiedBuffer(rs.toString(), CharsetUtil.UTF_8);
-        ctx.writeAndFlush(buf);
+        if (ctx.channel().isWritable()) {
+            ctx.writeAndFlush(buf);
+        }
     }
+
+
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) {
+        ctx.writeAndFlush(ChannelFutureListener.CLOSE);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        LOGGER.error("异常捕获：",cause);
+        ctx.close();
+    }
+
 
     /**
      * 向用户推送图表数据
@@ -150,17 +165,6 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
             simpMessagingTemplate.convertAndSendToUser(u.getValue().getName(), "/topic/machine/info.chart", data.toString());
         });
 
-    }
-
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
-        ctx.writeAndFlush(ChannelFutureListener.CLOSE);
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        LOGGER.error("异常捕获：",cause);
-        ctx.close();
     }
 
 }
