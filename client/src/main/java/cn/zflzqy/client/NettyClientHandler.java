@@ -62,6 +62,7 @@ public class NettyClientHandler extends ChannelInboundHandlerAdapter {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String todayStr = dateTimeFormatter.format(now);
         regester.put("time", todayStr);
+        regester.put("name","zflzflzflzf");
         ByteBuf byteBuf = Unpooled.copiedBuffer(regester.toString(), CharsetUtil.UTF_8);
         ChannelFuture channelFuture = ctx.writeAndFlush(byteBuf);
     }

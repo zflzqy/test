@@ -8,6 +8,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
 
 import java.util.concurrent.TimeUnit;
 
@@ -22,7 +24,7 @@ public class NettyClient {
     private EventLoopGroup group;
 
     public static void main(String[] args) throws Exception {
-        NettyClient nettyClient = new NettyClient("127.0.0.1", 12315);
+        NettyClient nettyClient = new NettyClient("zflzqy.cn", 12314);
         nettyClient.connect();
     }
 
@@ -44,7 +46,10 @@ public class NettyClient {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         //加入处理器
-                        ch.pipeline().addLast(new NettyClientHandler(NettyClient.this));
+                        ch.pipeline()
+                        .addLast("frameDecoder", new LengthFieldBasedFrameDecoder(2 * 1024 * 1024, 0, 4, 0, 4))
+                        .addLast("frameEncoder", new LengthFieldPrepender(4))// 前4个字节记录长度
+                         .addLast(new NettyClientHandler(NettyClient.this));
                     }
                 });
     }
