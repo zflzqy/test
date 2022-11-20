@@ -39,7 +39,10 @@ public class EchoServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf in = (ByteBuf) msg;
+
         String content = in.toString(CharsetUtil.UTF_8);
+
+
         LOGGER.info("获取到数据：{}", content);
         // 获取客户端ip
         InetSocketAddress insocket = (InetSocketAddress) ctx.channel().remoteAddress();
