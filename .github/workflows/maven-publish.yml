@@ -42,12 +42,10 @@ jobs:
 #          password: ${{ secrets.TENCENT_DOKER_PASSWROD }}
 #          image_version: ${{ steps.get_version.outputs.VERSION }}
 #          docker_file: '.'
-      - name: update-image
-        uses: Charlyzzz/update-k8s-image
+      - uses: rmeneely/update-yaml@v1
         with:
-          manifest-path: k8s/k8s.yaml
-          new-image-tag: ${{ steps.get_version.outputs.VERSION }}
-          name: test
+          infile: k8s/k8s.yaml
+          varlist: 'image.tag=0.0.2'
       - name: Trigger deploy
         uses: phamquyhai/kubernetes-action@master
         env:
