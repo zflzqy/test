@@ -42,7 +42,7 @@ jobs:
 #          password: ${{ secrets.TENCENT_DOKER_PASSWROD }}
 #          image_version: ${{ steps.get_version.outputs.VERSION }}
 #          docker_file: '.'
-      - id: update-image
+      - name: update-image
         uses: Charlyzzz/update-k8s-image
         with:
           manifest-path: k8s/k8s.yaml
