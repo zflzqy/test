@@ -42,10 +42,13 @@ jobs:
 #          password: ${{ secrets.TENCENT_DOKER_PASSWROD }}
 #          image_version: ${{ steps.get_version.outputs.VERSION }}
 #          docker_file: '.'
-      - uses: rmeneely/update-yaml@v1
+      - name: Update image tag for container nginx in deployment.yaml
+        uses: loveholidays/gitops-action-yaml-updater@v1.0
         with:
-          infile: k8s/k8s.yaml
-          varlist: 'image.tag=0.0.2'
+          mode: IMAGE_TAG
+          container-name: test
+          new-image-tag: 0.0.2
+          filepath: k8s/k8s.yaml
       - name: Trigger deploy
         uses: phamquyhai/kubernetes-action@master
         env:
