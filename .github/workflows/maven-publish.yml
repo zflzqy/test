@@ -42,3 +42,9 @@ jobs:
           password: ${{ secrets.TENCENT_DOKER_PASSWROD }}
           image_version: ${{ steps.get_version.outputs.VERSION }}
           docker_file: '.'
+      - name: Trigger deploy
+          uses: phamquyhai/kubernetes-action@master
+          env:
+            KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+          with:
+            args: apply k8s/k8s.yaml
