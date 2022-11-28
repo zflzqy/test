@@ -78,10 +78,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - web.zflzqy.cn
-      secretName: web-zflzqy-cn-tls
+        - test.zflzqy.cn
+      secretName: test-zflzqy-cn-tls
   rules:
-  - host: web.zflzqy.cn
+  - host: test.zflzqy.cn
     http:
       paths:
       - pathType: Prefix
