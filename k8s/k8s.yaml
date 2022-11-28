@@ -21,7 +21,7 @@ spec:
       restartPolicy: Always # 总是重启pod
       containers:
         - name: test
-          image: ccr.ccs.tencentyun.com/zflzqy/test:0.0.1
+          image: ccr.ccs.tencentyun.com/zflzqy/test:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
