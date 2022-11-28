@@ -15,8 +15,6 @@
     <description>test</description>
     <properties>
         <java.version>11</java.version>
-        <shiro.client.version>1.0.13</shiro.client.version>
-        <websocket.version>0.0.4</websocket.version>
     </properties>
     <repositories>
     <!--仓库地址-->
@@ -27,16 +25,6 @@
     </repository>
 </repositories>
     <dependencies>
-        <dependency>
-            <groupId>cn.zflzqy</groupId>
-            <artifactId>shiro-client</artifactId>
-            <version>${shiro.client.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>cn.zflzqy</groupId>
-            <artifactId>web-socket</artifactId>
-            <version>${websocket.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
