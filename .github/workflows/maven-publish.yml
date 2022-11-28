@@ -34,7 +34,7 @@ jobs:
       - name: Build Docker Image
         id: buildAndPushImage
         uses: risfeng/docker-image-build-push-action@v1.0
-        with:- uses: actions/checkout@master
+        with:
           registry_url: 'ccr.ccs.tencentyun.com'
           namespaces: 'zflzqy'
           repository_name: 'test'
