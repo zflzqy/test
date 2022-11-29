@@ -30,14 +30,14 @@ jobs:
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
       - name: Configure Maven
-          uses: s4u/maven-settings-action@v2.2.0
-          with:
-            servers: |
-              [{
-                  "id": "github",
-                  "username": "${{ secrets.MAVEN_USERNAME }}",
-                  "password": "${{ secrets.MAVEN_PASSWORD }}"
-              }]
+        uses: s4u/maven-settings-action@v2.2.0
+        with:
+          servers: |
+            [{
+                "id": "github",
+                "username": "${{ secrets.MAVEN_USERNAME }}",
+                "password": "${{ secrets.MAVEN_PASSWORD }}"
+            }]
       - name: Build with Maven
         run: mvn -B  -Dmaven.test.skip=true  package --file pom.xml
       - name: Build Docker Image
