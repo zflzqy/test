@@ -42,7 +42,9 @@ spec:
           resources:
             limits:
               cpu: 0.5
+              memory: 200Mi
             requests:
+              memory: 100Mi
               cpu: 0.25
           volumeMounts:
           - mountPath: /config  #容器内部目录
