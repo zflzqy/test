@@ -26,14 +26,18 @@ spec:
           ports:
             - containerPort: 8080
           readinessProbe:
-            tcpSocket:
+            httpGet:
               port: 8080
-            initialDelaySeconds: 20
-            periodSeconds: 10
+              path: /
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 10
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /
               port: 8080
-            initialDelaySeconds: 20
+            initialDelaySeconds: 60
             periodSeconds: 20
           resources:
             limits:
