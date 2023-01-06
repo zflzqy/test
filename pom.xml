@@ -10,12 +10,12 @@
     </parent>
     <groupId>cn.zflzqy</groupId>
     <artifactId>test</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.13</version>
     <name>test</name>
     <description>test</description>
     <properties>
         <java.version>11</java.version>
-        <shiro.client.version>1.0.13</shiro.client.version>
+        <shiro.client.version>1.0.14</shiro.client.version>
     </properties>
     <repositories>
     <!--仓库地址-->
